@@ -209,6 +209,24 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 .refresh-icon-btn:active{background:rgba(0,0,0,.12);transform:scale(.92)}
 .refresh-icon-btn svg{width:16px;height:16px}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* Cloud Sync UI */
+.sync-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.sync-status-dot.online{background:var(--success);box-shadow:0 0 4px var(--success)}
+.sync-status-dot.syncing{background:var(--accent);animation:pulse 1s infinite}
+.sync-status-dot.offline{background:var(--danger)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500;cursor:pointer;transition:all .15s}
+.sync-badge.online{background:#e8f5e9;color:#2e7d32}
+.sync-badge.offline{background:#fbe9e7;color:#c62828}
+.sync-badge.syncing{background:#e3f2fd;color:#1565c0}
+.sync-badge:active{transform:scale(.95)}
+.sync-settings-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;z-index:5000}
+.sync-settings-panel{background:var(--card-bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:460px;padding:24px 20px max(24px,env(safe-area-inset-bottom)) 20px;max-height:80vh;overflow-y:auto}
+.sync-settings-panel h3{font-size:17px;margin-bottom:16px}
+.sync-settings-panel .field-label{font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500}
+.sync-settings-panel input[type=password],.sync-settings-panel input[type=text]{width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:var(--radius-sm);font-size:13px;font-family:monospace;background:var(--bg2)}
+.sync-settings-panel .hint{font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5}
+.sync-settings-panel .hint a{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -231,8 +249,10 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">OSTA餐厅服务员考证</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin-left:4px">v9</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v10</span>
+      <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
       <span style="flex:1"></span>
+      <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
       <button class="refresh-icon-btn" onclick="exportAllData()" title="导出数据备份" style="margin-right:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
       <button class="refresh-icon-btn" onclick="importAllData()" title="导入数据备份"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </header>
@@ -261,154 +281,466 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 <input type="file" accept="image/*" id="avatarInput" class="hidden-input">
 <div id="loadingScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:3000"><div style="text-align:center"><div style="font-size:40px;margin-bottom:10px">⏳</div><div style="font-size:14px;color:#86868b">加载中...</div></div></div>
 
-<script src="osta.js?v=9"></script>
+<!-- Cloud Sync Settings Panel -->
+<div id="syncSettingsOverlay" class="sync-settings-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="sync-settings-panel" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin:0">☁️ 云端数据同步</h3>
+      <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2);padding:4px" onclick="document.getElementById('syncSettingsOverlay').style.display='none'">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      配置 GitHub Gist 云端存储后，Safari 网页端与手机主屏幕快捷方式将共用同一套数据，任意一端修改内容另一端实时同步。
+    </p>
+    <div style="margin-bottom:14px">
+      <div class="field-label">GitHub Personal Access Token</div>
+      <input type="password" id="syncTokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+      <div class="hint">Token 需要 <b>gist</b> 权限。<a href="https://github.com/settings/tokens/new?scopes=gist&description=Bice%20Workbench%20Sync" target="_blank" rel="noopener">点此创建 →</a></div>
+    </div>
+    <div id="syncStatusMsg" style="font-size:13px;padding:8px 12px;border-radius:8px;margin-bottom:12px;display:none"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="document.getElementById('syncSettingsOverlay').style.display='none'">取消</button>
+      <button class="btn btn-sm" style="flex:1;background:var(--accent);color:#fff" id="syncSaveBtn" onclick="saveSyncConfig()">保存并启用同步</button>
+    </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,.06);display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" style="flex:1;font-size:12px" onclick="forceCloudPull()">📥 从云端拉取</button>
+      <button class="btn btn-outline btn-sm" style="flex:1;font-size:12px" onclick="forceCloudPush()">📤 推送到云端</button>
+    </div>
+  </div>
+</div>
+
+<script src="osta.js?v=10"></script>
 <script>
-// ============ SERVICE WORKER REGISTRATION + DATA SYNC ============
-var _swReady=false;
-var _syncPending={};
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=9').then(function(reg){
-    // Check for updates
-    reg.addEventListener('updatefound',function(){
-      var newWorker=reg.installing;
-      if(newWorker){
-        newWorker.addEventListener('statechange',function(){
-          if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
-            // New version available — notify user
-            var banner=document.createElement('div');
-            banner.id='swUpdateBanner';
-            banner.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:12px 20px;border-radius:24px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);display:flex;align-items:center;gap:10px;cursor:pointer';
-            banner.innerHTML='<span>\uD83D\uDD04 \u53D1\u73B0\u65B0\u7248\u672C</span><span style="background:#007aff;padding:4px 14px;border-radius:16px;font-size:12px">\u7ACB\u5373\u66F4\u65B0</span>';
-            banner.onclick=function(){banner.remove();newWorker.postMessage({type:'skip-waiting'});location.reload();};
-            document.body.appendChild(banner);
-            setTimeout(function(){if(banner.parentNode)banner.remove();},15000);
+// ============ GITHUB GIST CLOUD SYNC LAYER ============
+// iOS Safari and PWA home screen have COMPLETELY SEPARATE localStorage/SW instances.
+// GitHub Gist API serves as a shared cloud data pool that both ends read/write from.
+var GistSync = {
+  token: null,
+  gistId: null,
+  _initialized: false,
+
+  init: function() {
+    if (this._initialized) return;
+    this._initialized = true;
+    try { this.token = localStorage.getItem('wb5_gs_token'); } catch(e) {}
+    try { this.gistId = localStorage.getItem('wb5_gs_gistid'); } catch(e) {}
+    if (this.token && this.gistId) return true;
+    return false;
+  },
+
+  isReady: function() { return !!(this.token && this.gistId); },
+
+  // Create a private Gist for data storage
+  createGist: function() {
+    var self = this;
+    return fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'token ' + this.token,
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify({
+        description: 'Bice Workbench Cloud Data (auto-managed)',
+        public: false,
+        files: {
+          'workbench-data.json': {
+            content: JSON.stringify({_app:'bice-workbench',_version:'10',_created:new Date().toISOString()})
           }
+        }
+      })
+    }).then(function(r) {
+      if (!r.ok) return r.json().then(function(e) { throw new Error(e.message || 'Gist creation failed') });
+      return r.json();
+    }).then(function(gist) {
+      self.gistId = gist.id;
+      try { localStorage.setItem('wb5_gs_gistid', gist.id); } catch(e) {}
+      return gist;
+    });
+  },
+
+  // Load data from Gist
+  load: function() {
+    if (!this.token || !this.gistId) return Promise.resolve(null);
+    return fetch('https://api.github.com/gists/' + this.gistId, {
+      headers: {
+        'Authorization': 'token ' + this.token,
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    }).then(function(r) {
+      if (!r.ok) throw new Error('Gist fetch failed: ' + r.status);
+      return r.json();
+    }).then(function(gist) {
+      var f = gist.files['workbench-data.json'];
+      if (!f || !f.content) return null;
+      try { return JSON.parse(f.content); } catch(e) { return null; }
+    }).catch(function(err) {
+      console.warn('[GistSync] Load failed:', err.message);
+      return null;
+    });
+  },
+
+  // Save data to Gist (with debounce)
+  _saveTimer: null,
+  save: function(data) {
+    var self = this;
+    if (!this.token || !this.gistId) return Promise.resolve(false);
+    clearTimeout(this._saveTimer);
+    return new Promise(function(resolve) {
+      self._saveTimer = setTimeout(function() {
+        fetch('https://api.github.com/gists/' + self.gistId, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': 'token ' + self.token,
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github.v3+json'
+          },
+          body: JSON.stringify({
+            files: {
+              'workbench-data.json': { content: JSON.stringify(data) }
+            }
+          })
+        }).then(function(r) {
+          if (!r.ok) throw new Error('Save failed: ' + r.status);
+          return r.json();
+        }).then(function() {
+          updateSyncBadge('online');
+          resolve(true);
+        }).catch(function(err) {
+          console.warn('[GistSync] Save failed:', err.message);
+          updateSyncBadge('offline');
+          resolve(false);
+        });
+      }, 500);
+    });
+  }
+};
+
+// ============ SYNC BADGE UI ============
+var _syncBadgeTimer = null;
+function updateSyncBadge(state) {
+  var badge = document.getElementById('syncBadge');
+  var dot = badge.querySelector('.sync-status-dot');
+  var refreshBtn = document.getElementById('syncRefreshBtn');
+  if (!badge) return;
+  badge.className = 'sync-badge ' + state;
+  dot.className = 'sync-status-dot ' + state;
+  if (state === 'online') {
+    badge.innerHTML = '<span class="sync-status-dot online"></span>已同步';
+    if (refreshBtn) refreshBtn.style.display = '';
+  } else if (state === 'syncing') {
+    badge.innerHTML = '<span class="sync-status-dot syncing"></span>同步中';
+  } else {
+    badge.innerHTML = '<span class="sync-status-dot offline"></span>未同步';
+    if (refreshBtn) refreshBtn.style.display = 'none';
+  }
+  // Auto-clear syncing after 5s
+  if (state === 'syncing') {
+    clearTimeout(_syncBadgeTimer);
+    _syncBadgeTimer = setTimeout(function() {
+      updateSyncBadge(GistSync.isReady() ? 'online' : 'offline');
+    }, 5000);
+  }
+}
+
+function openSyncSettings() {
+  var ov = document.getElementById('syncSettingsOverlay');
+  if (ov.style.display === 'flex' || ov.style.display === 'block') {
+    ov.style.display = 'none';
+  } else {
+    ov.style.display = 'flex';
+    // Pre-fill fields
+    if (GistSync.token) document.getElementById('syncTokenInput').value = GistSync.token;
+    // Clear status
+    var msg = document.getElementById('syncStatusMsg');
+    msg.style.display = 'none';
+    if (GistSync.isReady()) {
+      msg.style.display = 'block';
+      msg.style.background = '#e8f5e9';
+      msg.style.color = '#2e7d32';
+      msg.textContent = '✓ 云端同步��启用 — Gist ID: ' + GistSync.gistId.substring(0,8) + '...';
+    }
+  }
+}
+
+function saveSyncConfig() {
+  var token = document.getElementById('syncTokenInput').value.trim();
+  var msg = document.getElementById('syncStatusMsg');
+  msg.style.display = 'none';
+
+  if (!token || !token.startsWith('ghp_')) {
+    msg.style.display = 'block';
+    msg.style.background = '#fbe9e7';
+    msg.style.color = '#c62828';
+    msg.textContent = 'Token 格式错误，应以 ghp_ 开头';
+    return;
+  }
+
+  msg.style.display = 'block';
+  msg.style.background = '#e3f2fd';
+  msg.style.color = '#1565c0';
+  msg.textContent = '正在连接 GitHub...';
+
+  // Save token
+  GistSync.token = token;
+  try { localStorage.setItem('wb5_gs_token', token); } catch(e) {}
+
+  // Create or verify Gist
+  if (GistSync.gistId) {
+    // Already have a Gist — verify it
+    GistSync.load().then(function(data) {
+      if (data !== null) {
+        msg.style.background = '#e8f5e9';
+        msg.style.color = '#2e7d32';
+        msg.textContent = '✓ 云端同步已启用！Gist ID: ' + GistSync.gistId.substring(0,8) + '...';
+        updateSyncBadge('online');
+        document.getElementById('syncRefreshBtn').style.display = '';
+        // Pull latest data
+        setTimeout(function() { loadCloudData(data); }, 300);
+      } else {
+        // Gist not found — create new one
+        GistSync.createGist().then(function() {
+          msg.style.background = '#e8f5e9';
+          msg.style.color = '#2e7d32';
+          msg.textContent = '✓ 云端存储已创建！Gist ID: ' + GistSync.gistId.substring(0,8) + '...';
+          updateSyncBadge('online');
+          document.getElementById('syncRefreshBtn').style.display = '';
+          forceCloudPush();
+        }).catch(function(err) {
+          msg.style.background = '#fbe9e7';
+          msg.style.color = '#c62828';
+          msg.textContent = '创建 Gist 失败：' + err.message;
         });
       }
     });
-    // Listen for SW messages (data sync)
-    navigator.serviceWorker.addEventListener('message',function(event){
-      if(event.data.type==='sw-updated'){
-        console.log('[SW] Version updated:',event.data.version);
-      }
-      if(event.data.type==='data-changed'){
-        console.log('[Sync] Data changed by another client at',new Date(event.data.timestamp));
-        loadSyncSnapshot();
-      }
-      if(event.data.type==='data-response'&&event.data.snapshot){
-        mergeSyncSnapshot(event.data.snapshot);
-      }
+  } else {
+    GistSync.createGist().then(function() {
+      msg.style.background = '#e8f5e9';
+      msg.style.color = '#2e7d32';
+      msg.textContent = '✓ 云端存储已创建！Gist ID: ' + GistSync.gistId.substring(0,8) + '...';
+      updateSyncBadge('online');
+      document.getElementById('syncRefreshBtn').style.display = '';
+      forceCloudPush();
+    }).catch(function(err) {
+      msg.style.background = '#fbe9e7';
+      msg.style.color = '#c62828';
+      msg.textContent = '创建 Gist 失败：' + err.message;
     });
-    _swReady=true;
-    // Initial data sync — fetch any snapshot from SW
-    setTimeout(function(){
-      if(navigator.serviceWorker.controller){
-        navigator.serviceWorker.controller.postMessage({type:'fetch-data'});
-      }
-    },500);
-  }).catch(function(){});
-}
-
-// ============ STORAGE HELPERS ============
-var APP_VERSION='9';
-try{
-  var _ver=localStorage.getItem('wb5_appver');
-  if(_ver!==APP_VERSION){
-    localStorage.setItem('wb5_appver',APP_VERSION);
   }
-}catch(e){}
-
-// All data keys for sync
-var SYNC_KEYS=['fitness','thoughts','osta_wrong','osta_progress','diet','en_done','en_state','video_state'];
-
-function ld(k,d){try{var r=localStorage.getItem('wb5_'+k);return r?JSON.parse(r):d}catch(e){return d}}
-
-function sv(k,v){
-  try{localStorage.setItem('wb5_'+k,JSON.stringify(v))}catch(e){toast('存储空间不足，请清理数据');return}
-  // Sync to SW cache for cross-client sharing
-  syncToSW();
 }
 
-// Debounced sync to SW
-var _syncTimer=null;
-function syncToSW(){
-  if(!_swReady||!navigator.serviceWorker.controller)return;
-  clearTimeout(_syncTimer);
-  _syncTimer=setTimeout(function(){
-    var snapshot={};
-    SYNC_KEYS.forEach(function(k){
-      try{var r=localStorage.getItem('wb5_'+k);if(r)snapshot[k]=JSON.parse(r)}catch(e){}
+// ============ STORAGE HELPERS (with cloud sync) ============
+var APP_VERSION = '10';
+var SYNC_KEYS = ['fitness','thoughts','osta_wrong','osta_progress','diet','en_done','en_state','video_state'];
+
+// Version migration: if old version, clear cache on next SW update
+try {
+  var _ver = localStorage.getItem('wb5_appver');
+  if (_ver !== APP_VERSION) {
+    localStorage.setItem('wb5_appver', APP_VERSION);
+    // Force SW update
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'skip-waiting' });
+    }
+  }
+} catch(e) {}
+
+// Read from localStorage (primary store)
+function ld(k, d) {
+  try { var r = localStorage.getItem('wb5_' + k); return r ? JSON.parse(r) : d; } catch(e) { return d; }
+}
+
+// Write to localStorage + schedule cloud push
+var _cloudPushTimer = null;
+function sv(k, v) {
+  try { localStorage.setItem('wb5_' + k, JSON.stringify(v)); } catch(e) { toast('存储空间不足，请清理数据'); return; }
+  scheduleCloudPush();
+}
+
+// Debounced cloud push after local changes
+function scheduleCloudPush() {
+  if (!GistSync.isReady()) return;
+  clearTimeout(_cloudPushTimer);
+  _cloudPushTimer = setTimeout(function() {
+    pushToCloud();
+  }, 800);
+}
+
+// Push all local data to cloud
+function pushToCloud() {
+  if (!GistSync.isReady()) return;
+  updateSyncBadge('syncing');
+  var data = { _app: 'bice-workbench', _version: APP_VERSION, _updated: new Date().toISOString() };
+  SYNC_KEYS.forEach(function(k) {
+    try { var r = localStorage.getItem('wb5_' + k); if (r) data[k] = JSON.parse(r); } catch(e) {}
+  });
+  GistSync.save(data);
+}
+
+// Pull cloud data and merge into localStorage
+function loadCloudData(cloudData) {
+  if (!cloudData) return;
+  var merged = 0;
+  SYNC_KEYS.forEach(function(k) {
+    if (!cloudData[k]) return;
+    // Cloud data wins (it's the shared truth)
+    try { localStorage.setItem('wb5_' + k, JSON.stringify(cloudData[k])); merged++; } catch(e) {}
+  });
+  if (merged > 0) {
+    console.log('[Cloud] Merged ' + merged + ' keys from cloud');
+    toast('已同步 ' + merged + ' 项云端数据');
+    // Refresh current view
+    var cur = document.querySelector('.nav-item.active');
+    if (cur) cur.click();
+  }
+}
+
+function forceCloudPull() {
+  if (!GistSync.isReady()) {
+    openSyncSettings();
+    return;
+  }
+  updateSyncBadge('syncing');
+  GistSync.load().then(function(data) {
+    if (data) {
+      loadCloudData(data);
+      updateSyncBadge('online');
+    } else {
+      updateSyncBadge('offline');
+      toast('云端暂无数据');
+    }
+  }).catch(function(err) {
+    updateSyncBadge('offline');
+    toast('拉取失败：' + err.message);
+  });
+}
+
+function forceCloudPush() {
+  if (!GistSync.isReady()) {
+    openSyncSettings();
+    return;
+  }
+  updateSyncBadge('syncing');
+  pushToCloud();
+  setTimeout(function() {
+    updateSyncBadge('online');
+    toast('数据已推送到云端');
+  }, 2000);
+}
+
+// ============ SERVICE WORKER REGISTRATION v10 ============
+var _swLoaded = false;
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js?v=10').then(function(reg) {
+    reg.addEventListener('updatefound', function() {
+      var newWorker = reg.installing;
+      if (!newWorker) return;
+      newWorker.addEventListener('statechange', function() {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // New SW detected — force update
+          showUpdateBanner(newWorker);
+        }
+      });
     });
-    navigator.serviceWorker.controller.postMessage({
-      type:'sync-data',
-      source:'web',
-      payload:snapshot
-    });
-  },300);
-}
 
-// Load snapshot from SW and merge
-function loadSyncSnapshot(){
-  if(!navigator.serviceWorker.controller)return;
-  navigator.serviceWorker.controller.postMessage({type:'fetch-data'});
-}
+    // If SW is already controlling (from previous version), check for updates
+    if (navigator.serviceWorker.controller) {
+      reg.update();
+    }
 
-function mergeSyncSnapshot(snapshot){
-  if(!snapshot||!snapshot.payload)return;
-  var payload=snapshot.payload;
-  var merged=false;
-  SYNC_KEYS.forEach(function(k){
-    if(!payload[k])return;
-    var localStr=null;
-    try{localStr=localStorage.getItem('wb5_'+k)}catch(e){}
-    var local=localStr?JSON.parse(localStr):null;
-    // Simple merge: SW snapshot wins unless local has more entries (heuristic)
-    var shouldMerge=!local||
-      (typeof payload[k]==='object'&&payload[k]!==null&&
-       (Array.isArray(payload[k])?payload[k].length>=((Array.isArray(local)&&local.length)||0):true));
-    if(shouldMerge){
-      try{localStorage.setItem('wb5_'+k,JSON.stringify(payload[k]));merged=true}catch(e){}
+    _swLoaded = true;
+  }).catch(function(err) {
+    console.warn('[SW] Registration failed:', err);
+    _swLoaded = true; // Mark as loaded even on failure to hide loading screen
+  });
+
+  // Listen for SW messages
+  navigator.serviceWorker.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'sw-updated') {
+      console.log('[SW] Updated to', event.data.version);
+      // If page version is older, force reload
+      if (event.data.version !== APP_VERSION) {
+        showUpdateBanner(null);
+      }
     }
   });
-  if(merged){
-    console.log('[Sync] Merged SW snapshot data');
-    // Refresh current view if visible
-    var cur=document.querySelector('.nav-item.active');
-    if(cur)cur.click();
-  }
+}
+
+function showUpdateBanner(worker) {
+  var old = document.getElementById('swUpdateBanner');
+  if (old) old.remove();
+
+  var banner = document.createElement('div');
+  banner.id = 'swUpdateBanner';
+  banner.style.cssText = 'position:fixed;bottom:max(20px,env(safe-area-inset-bottom,0px)+10px);left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:14px 22px;border-radius:28px;font-size:14px;z-index:9999;box-shadow:0 4px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:10px;cursor:pointer;max-width:90vw';
+  banner.innerHTML = '<span style="font-size:18px">🔔</span><span>新版已就绪，点击更新</span>';
+  banner.onclick = function() {
+    banner.remove();
+    if (worker) worker.postMessage({ type: 'skip-waiting' });
+    // Clear all caches and reload
+    if ('caches' in window) {
+      caches.keys().then(function(keys) {
+        keys.forEach(function(k) { caches.delete(k); });
+      });
+    }
+    location.reload(true);
+  };
+  document.body.appendChild(banner);
+}
+
+// ============ INITIALIZATION ============
+// Version check: fetch version.json to verify deployment is current
+function checkAppVersion() {
+  fetch('./version.json?t=' + Date.now(), { cache: 'no-store' })
+    .then(function(r) { return r.json(); })
+    .then(function(remote) {
+      if (remote.version !== APP_VERSION) {
+        console.warn('[Version] Remote v' + remote.version + ' vs local v' + APP_VERSION + ' — forcing update');
+        // Force SW update
+        if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistration) {
+          navigator.serviceWorker.getRegistration().then(function(reg) {
+            if (reg) { reg.unregister().then(function() { location.reload(true); }); }
+            else { location.reload(true); }
+          });
+        } else {
+          location.reload(true);
+        }
+      } else {
+        console.log('[Version] Remote v' + remote.version + ' matches local v' + APP_VERSION);
+      }
+    }).catch(function() { /* ignore network errors */ });
 }
 
 // ============ MANUAL DATA EXPORT/IMPORT ============
-function exportAllData(){
-  var data={_version:APP_VERSION,_exported:new Date().toISOString()};
-  SYNC_KEYS.forEach(function(k){
-    try{var r=localStorage.getItem('wb5_'+k);if(r)data[k]=JSON.parse(r)}catch(e){}
+function exportAllData() {
+  var data = { _version: APP_VERSION, _exported: new Date().toISOString() };
+  SYNC_KEYS.forEach(function(k) {
+    try { var r = localStorage.getItem('wb5_' + k); if (r) data[k] = JSON.parse(r); } catch(e) {}
   });
-  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');a.href=url;a.download='bice-workbench-backup-'+td()+'.json';
-  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url; a.download = 'bice-workbench-backup-' + td() + '.json';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   toast('数据已导出');
 }
 
-function importAllData(){
-  var input=document.createElement('input');input.type='file';input.accept='.json';
-  input.onchange=function(e){
-    var file=e.target.files[0];if(!file)return;
-    var reader=new FileReader();
-    reader.onload=function(ev){
-      try{
-        var data=JSON.parse(ev.target.result);
-        var count=0;
-        SYNC_KEYS.forEach(function(k){
-          if(data[k]!==undefined){
-            try{localStorage.setItem('wb5_'+k,JSON.stringify(data[k]));count++}catch(e){}
+function importAllData() {
+  var input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+  input.onchange = function(e) {
+    var file = e.target.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var data = JSON.parse(ev.target.result);
+        var count = 0;
+        SYNC_KEYS.forEach(function(k) {
+          if (data[k] !== undefined) {
+            try { localStorage.setItem('wb5_' + k, JSON.stringify(data[k])); count++; } catch(e) {}
           }
         });
-        toast('已导入 '+count+' 项数据，页面即将刷新');
-        syncToSW();
-        setTimeout(function(){location.reload();},800);
-      }catch(e){toast('导入失败：文件格式错误')}
+        toast('已导入 ' + count + ' 项数据，页面即将刷新');
+        scheduleCloudPush();
+        setTimeout(function() { location.reload(); }, 800);
+      } catch(e) { toast('导入失败：文件格式错误'); }
     };
     reader.readAsText(file);
   };
@@ -1378,18 +1710,55 @@ document.addEventListener('click',function(e){
 });
 
 // ============ INIT ============
-try{
-  switchPage('osta');
-  setTimeout(function(){
-    var ls=document.getElementById('loadingScreen');
-    if(ls)ls.style.display='none';
-  },300);
-}catch(err){
-  var ls=document.getElementById('loadingScreen');
-  if(ls){
-    ls.innerHTML='<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:10px">😵</div><div style="font-size:14px;color:#ff3b30;margin-bottom:8px">页面加载出错</div><div style="font-size:12px;color:#86868b;word-break:break-all">'+(err&&err.message?err.message:'未知错误')+'</div><button style="margin-top:16px;padding:10px 24px;background:#1d1d1f;color:#fff;border:none;border-radius:18px;font-size:14px" onclick="location.reload()">重新加载</button></div>';
+// Loading timeout: force reload if stuck > 8 seconds
+var _loadTimeout = setTimeout(function() {
+  console.warn('[Init] Loading timeout — force reloading');
+  location.reload(true);
+}, 8000);
+
+function _finishInit() {
+  clearTimeout(_loadTimeout);
+  var ls = document.getElementById('loadingScreen');
+  if (ls) {
+    ls.style.opacity = '0';
+    ls.style.transition = 'opacity .3s';
+    setTimeout(function() { if (ls.parentNode) ls.remove(); }, 350);
   }
-  console.error('Init error:',err);
+}
+
+try {
+  // Init cloud sync
+  GistSync.init();
+  if (GistSync.isReady()) {
+    updateSyncBadge('online');
+    document.getElementById('syncRefreshBtn').style.display = '';
+    // Pull latest data from cloud on startup
+    GistSync.load().then(function(cloudData) {
+      if (cloudData) {
+        loadCloudData(cloudData);
+      }
+    }).catch(function() {
+      updateSyncBadge('offline');
+    });
+  }
+
+  // Version check (delayed to not block initial render)
+  setTimeout(function() {
+    checkAppVersion();
+  }, 2000);
+
+  // Render page
+  switchPage('osta');
+
+  // Hide loading screen
+  setTimeout(function() { _finishInit(); }, 400);
+} catch(err) {
+  clearTimeout(_loadTimeout);
+  var ls = document.getElementById('loadingScreen');
+  if (ls) {
+    ls.innerHTML = '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:10px">😵</div><div style="font-size:14px;color:#ff3b30;margin-bottom:8px">页面加载出错</div><div style="font-size:12px;color:#86868b;word-break:break-all">' + (err && err.message ? err.message : '未知错误') + '</div><button style="margin-top:16px;padding:10px 24px;background:#1d1d1f;color:#fff;border:none;border-radius:18px;font-size:14px" onclick="location.reload(true)">重新加载</button></div>';
+  }
+  console.error('Init error:', err);
 }
 </script>
 

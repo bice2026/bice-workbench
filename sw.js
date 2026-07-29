@@ -1,146 +1,102 @@
-// Bice Workbench Service Worker v9
-const CACHE_NAME = 'bice-wb-v9';
-const DATA_CACHE = 'bice-wb-data-v9';
+// Bice Workbench Service Worker v10
+const CACHE_NAME = 'bice-wb-v10';
+const SW_VERSION = '10';
 const ASSETS = [
   './',
   './index.html',
   './osta.js',
   './manifest.json',
+  './version.json',
   './icon-192.png',
   './icon-512.png'
 ];
 
-// ============ INSTALL ============
+// ============ INSTALL: cache core assets, skip waiting ============
 self.addEventListener('install', function(event) {
+  console.log('[SW v10] Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll(ASSETS);
+      return cache.addAll(ASSETS).catch(function(err) {
+        console.warn('[SW v10] Some assets failed to pre-cache:', err);
+      });
     }).then(function() {
       return self.skipWaiting();
     })
   );
 });
 
-// ============ ACTIVATE: clean old caches + notify clients ============
+// ============ ACTIVATE: purge ALL old caches, claim clients ============
 self.addEventListener('activate', function(event) {
+  console.log('[SW v10] Activating — purging all old caches...');
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.filter(function(k) {
-          return k !== CACHE_NAME && k !== DATA_CACHE;
-        }).map(function(k) {
-          return caches.delete(k);
+        keys.map(function(k) {
+          if (k !== CACHE_NAME) {
+            console.log('[SW v10] Deleting cache:', k);
+            return caches.delete(k);
+          }
         })
       );
     }).then(function() {
       return self.clients.claim();
     }).then(function() {
-      // Notify all clients that a new version is available
       return self.clients.matchAll().then(function(clients) {
         clients.forEach(function(client) {
-          client.postMessage({ type: 'sw-updated', version: 'v9' });
+          client.postMessage({ type: 'sw-updated', version: 'v10' });
         });
       });
     })
   );
 });
 
-// ============ FETCH: network-first HTML, cache-first assets ============
+// ============ FETCH: network-first for ALL requests ============
+// This guarantees users always see the latest deployed content.
+// Cache is used as offline fallback only.
 self.addEventListener('fetch', function(event) {
   if (event.request.method !== 'GET') return;
 
-  // Never cache sw.js itself — always fetch from network
+  // sw.js itself: NEVER cache, always fetch from network
   if (event.request.url.indexOf('sw.js') !== -1) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).then(function(response) {
+  // version.json: NEVER cache, always fetch from network
+  if (event.request.url.indexOf('version.json') !== -1) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Everything else: network-first, cache as fallback
+  event.respondWith(
+    fetch(event.request).then(function(response) {
+      // Cache successful responses
+      if (response.status === 200 && response.type === 'basic') {
         var clone = response.clone();
         caches.open(CACHE_NAME).then(function(cache) {
           cache.put(event.request, clone);
         });
-        return response;
-      }).catch(function() {
-        return caches.match(event.request);
-      })
-    );
-  } else {
-    event.respondWith(
-      caches.match(event.request).then(function(cached) {
-        return cached || fetch(event.request).then(function(response) {
-          // Only cache same-origin assets
-          if (response.status === 200) {
-            var clone = response.clone();
-            caches.open(CACHE_NAME).then(function(cache) {
-              cache.put(event.request, clone);
-            });
-          }
-          return response;
-        });
-      })
-    );
-  }
+      }
+      return response;
+    }).catch(function() {
+      // Network failed — serve from cache if available
+      return caches.match(event.request);
+    })
+  );
 });
 
-// ============ MESSAGE: cross-client data sync ============
+// ============ MESSAGE: version responses ============
 self.addEventListener('message', function(event) {
-  var data = event.data;
-
-  if (data.type === 'sync-data') {
-    // Store data snapshot in Data Cache (shared between Safari & PWA on iOS)
-    event.waitUntil(
-      caches.open(DATA_CACHE).then(function(cache) {
-        return cache.put(
-          new Request('/__data__/snapshot.json'),
-          new Response(JSON.stringify({
-            timestamp: Date.now(),
-            source: data.source || 'unknown',
-            payload: data.payload
-          }), {
-            headers: { 'Content-Type': 'application/json' }
-          })
-        );
-      }).then(function() {
-        // Broadcast to all other clients
-        return self.clients.matchAll().then(function(clients) {
-          clients.forEach(function(client) {
-            if (client.id !== (event.source ? event.source.id : null)) {
-              client.postMessage({
-                type: 'data-changed',
-                timestamp: Date.now()
-              });
-            }
-          });
-        });
-      })
-    );
+  if (event.data && event.data.type === 'get-version') {
+    if (event.source) {
+      event.source.postMessage({
+        type: 'version-response',
+        version: SW_VERSION
+      });
+    }
   }
-
-  if (data.type === 'fetch-data') {
-    event.waitUntil(
-      caches.open(DATA_CACHE).then(function(cache) {
-        return cache.match('/__data__/snapshot.json');
-      }).then(function(response) {
-        if (response) {
-          return response.json().then(function(snapshot) {
-            if (event.source) {
-              event.source.postMessage({
-                type: 'data-response',
-                snapshot: snapshot
-              });
-            }
-          });
-        } else if (event.source) {
-          event.source.postMessage({ type: 'data-response', snapshot: null });
-        }
-      })
-    );
-  }
-
-  if (data.type === 'skip-waiting') {
+  if (event.data && event.data.type === 'skip-waiting') {
     self.skipWaiting();
   }
 });
