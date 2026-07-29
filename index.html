@@ -73,24 +73,38 @@ body{
 select.input{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%2386868b' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:10px 18px;border-radius:18px;font-size:12px;font-weight:500;z-index:2000;animation:toastIn .25s ease;pointer-events:none;max-width:80vw;text-align:center}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-/* Reader styles */
-.reader-panel{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:999;display:none;flex-direction:column;animation:fadeIn .2s ease}
-.reader-panel.show{display:flex}
-.reader-toolbar{display:flex;align-items:center;gap:12px;padding:max(8px,env(safe-area-inset-top)) 14px 8px;border-bottom:1px solid rgba(0,0,0,.06);flex-shrink:0;min-height:44px;background:var(--bg);overflow-x:auto}
-.reader-toolbar select{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid #ddd}
-.reader-content{flex:1;overflow-y:auto;padding:18px 16px 40px;-webkit-overflow-scrolling:touch;font-size:var(--font-size);line-height:var(--line-height);color:var(--text)}
-.reader-content h2{font-size:22px;margin-bottom:16px;text-align:center}
-.reader-content h3{font-size:18px;margin:16px 0 10px}
-.reader-content p{margin-bottom:14px;text-indent:2em}
-/* Book card with cover */
-.book-card{border-radius:var(--radius);overflow:hidden;box-shadow:var(--card-shadow);cursor:pointer;transition:all .15s;background:var(--card-bg);position:relative}
-.book-card:active{transform:scale(.97)}
-.book-card .book-cover-img{width:100%;height:180px;object-fit:cover;display:block;background:linear-gradient(135deg,#667eea,#764ba2)}
-.book-card .book-cover-fallback{width:100%;height:180px;display:flex;align-items:center;justify-content:center;font-size:48px;color:#fff}
-.book-card .book-card-body{padding:10px}
-.book-card .book-card-body h4{font-size:13px;line-height:1.3;margin-bottom:3px}
-.book-card .book-card-body .book-author{font-size:11px;color:var(--text2)}
-.book-card .book-badge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.55);color:#fff;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600;backdrop-filter:blur(6px)}
+/* OSTA Exam styles */
+.osta-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 200px);min-height:400px}
+.osta-block{border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;transition:all .15s;box-shadow:var(--card-shadow);position:relative;overflow:hidden}
+.osta-block:active{transform:scale(.97)}
+.osta-start{background:linear-gradient(135deg,#007AFF,#0051d5);color:#fff;grid-row:span 2}
+.osta-start .osta-icon{font-size:56px;margin-bottom:10px}
+.osta-start .osta-label{font-size:20px;font-weight:700}
+.osta-start .osta-sub{font-size:12px;opacity:.8;margin-top:4px}
+.osta-wrong{background:linear-gradient(135deg,#FF9500,#FF6B00);color:#fff}
+.osta-wrong .osta-icon{font-size:36px;margin-bottom:6px}
+.osta-wrong .osta-label{font-size:15px;font-weight:600}
+.osta-bank{background:linear-gradient(135deg,#34C759,#28a745);color:#fff}
+.osta-bank .osta-icon{font-size:36px;margin-bottom:6px}
+.osta-bank .osta-label{font-size:15px;font-weight:600}
+.osta-badge-count{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.25);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;backdrop-filter:blur(6px)}
+.osta-question{background:var(--card-bg);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;box-shadow:var(--card-shadow)}
+.osta-q-text{font-size:15px;font-weight:600;line-height:1.6;margin-bottom:12px}
+.osta-options .osta-opt{display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e5ea;border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;transition:all .15s;font-size:14px}
+.osta-options .osta-opt:active{background:rgba(0,122,255,.05)}
+.osta-options .osta-opt.selected{border-color:var(--accent);background:rgba(0,122,255,.05)}
+.osta-options .osta-opt.correct{border-color:var(--success);background:rgba(52,199,89,.1)}
+.osta-options .osta-opt.wrong{border-color:var(--danger);background:rgba(255,59,48,.1)}
+.osta-opt-letter{width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;background:#f2f2f7}
+.osta-opt.selected .osta-opt-letter{background:var(--accent);color:#fff}
+.osta-opt.correct .osta-opt-letter{background:var(--success);color:#fff}
+.osta-opt.wrong .osta-opt-letter{background:var(--danger);color:#fff}
+.osta-judge{display:flex;gap:12px;margin-top:8px}
+.osta-judge .osta-opt{flex:1;justify-content:center;padding:12px}
+.osta-score-display{text-align:center;padding:30px 20px}
+.osta-score-num{font-size:48px;font-weight:700;color:var(--accent)}
+.osta-progress-bar{height:4px;background:#e5e5ea;border-radius:2px;overflow:hidden;margin-bottom:12px}
+.osta-progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .2s}
 /* English */
 .en-passage{font-size:15px;line-height:2;padding:12px;border-radius:var(--radius-sm);transition:background .15s}
 .en-passage:active{background:rgba(0,122,255,.05)}
@@ -146,6 +160,9 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 .thoughts-filter .filter-chip.active{background:#1d1d1f;color:#fff}
 .thought-card{border-radius:var(--radius);background:var(--card-bg);box-shadow:var(--card-shadow);margin-bottom:12px;overflow:hidden;position:relative}
 .thought-card .tc-img{width:100%;max-height:240px;object-fit:cover;cursor:pointer}
+.thought-card.text-only{background:linear-gradient(135deg,#f8f9fa,#e9ecef);border-left:4px solid var(--accent)}
+.thought-card.text-only .tc-body{padding:18px}
+.thought-card.text-only .tc-text{font-size:15px;line-height:1.8;color:var(--text)}
 .thought-card .tc-body{padding:14px}
 .thought-card .tc-text{font-size:14px;line-height:1.6;white-space:pre-wrap;margin-bottom:8px}
 .thought-card .tc-meta{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text2);flex-wrap:wrap;gap:6px}
@@ -168,6 +185,12 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 .tab-item{padding:7px 14px;border-radius:16px;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer;transition:all .15s;background:rgba(0,0,0,.05);color:var(--text);border:none;font-family:inherit;flex-shrink:0}
 .tab-item.active{background:#1d1d1f;color:#fff}
 .upload-preview{width:100%;border-radius:var(--radius);margin:8px 0;max-height:200px;object-fit:cover}
+.custom-ex-card{border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--card-shadow);background:var(--card-bg);margin-bottom:12px}
+.custom-ex-card .ex-img{width:100%;max-height:240px;object-fit:cover;cursor:pointer}
+.custom-ex-card .ex-body{padding:14px}
+.custom-ex-card .ex-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.custom-ex-card .ex-desc{font-size:12px;color:var(--text2);line-height:1.5}
+.custom-ex-card .ex-date{font-size:10px;color:var(--text2);margin-top:6px}
 .hidden-input{display:none}
 .longpress-hint{font-size:10px;color:var(--text2);text-align:center;margin-top:4px}
 .food-detail-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(0,0,0,.05);font-size:12px}
@@ -193,7 +216,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
       <div class="avatar-overlay">更换</div>
     </div>
     <ul class="nav-list">
-      <li class="nav-item active" data-page="reading"><span class="nav-icon">📖</span><span class="nav-label">阅读</span></li>
+      <li class="nav-item active" data-page="osta"><span class="nav-icon">📝</span><span class="nav-label">考证</span></li>
       <li class="nav-item" data-page="english"><span class="nav-icon">🗣️</span><span class="nav-label">英语</span></li>
       <li class="nav-item" data-page="videos"><span class="nav-icon">🔥</span><span class="nav-label">视频</span></li>
       <li class="nav-item" data-page="fitness"><span class="nav-icon">💪</span><span class="nav-label">健身</span></li>
@@ -203,27 +226,11 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   </aside>
   <main class="main">
     <header class="header">
-      <h1 id="pageTitle">阅读打卡</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin-left:4px">v7</span>
+      <h1 id="pageTitle">OSTA餐厅服务员考证</h1>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin-left:4px">v8</span>
     </header>
     <div class="content-area" id="contentArea"></div>
   </main>
-</div>
-<div class="reader-panel" id="readerPanel">
-  <div class="reader-toolbar">
-    <button class="btn btn-outline btn-sm" onclick="closeReader()">← 返回</button>
-    <span style="font-size:13px;font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="readerBookTitle"></span>
-    <span style="font-size:10px;color:var(--text2)">字:</span>
-    <select onchange="setFontSize(this.value)" id="readerFontSize">
-      <option value="14">小</option><option value="16" selected>中</option><option value="18">大</option><option value="22">特大</option>
-    </select>
-    <span style="font-size:10px;color:var(--text2)">行:</span>
-    <select onchange="setLineHeight(this.value)" id="readerLineHeight">
-      <option value="1.5">窄</option><option value="1.8" selected>标准</option><option value="2.2">宽</option><option value="2.8">特宽</option>
-    </select>
-    <span style="font-size:11px;color:var(--text2);min-width:40px;text-align:right" id="readerTimer">00:00</span>
-  </div>
-  <div class="reader-content" id="readerContent"></div>
 </div>
 <div class="dialog-overlay" id="confirmDialog">
   <div class="dialog-box">
@@ -247,11 +254,11 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 <input type="file" accept="image/*" id="avatarInput" class="hidden-input">
 <div id="loadingScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:3000"><div style="text-align:center"><div style="font-size:40px;margin-bottom:10px">⏳</div><div style="font-size:14px;color:#86868b">加载中...</div></div></div>
 
-<script src="books.js?v=7"></script>
+<script src="osta.js?v=8"></script>
 <script>
 // ============ SERVICE WORKER REGISTRATION ============
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=7').catch(function(){});
+  navigator.serviceWorker.register('./sw.js?v=8').catch(function(){});
 }
 
 // ============ STORAGE HELPERS ============
@@ -266,6 +273,23 @@ function sv(k,v){try{localStorage.setItem('wb5_'+k,JSON.stringify(v))}catch(e){t
 function td(){return new Date().toISOString().split('T')[0]}
 function fd(d){return new Date(d).toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'short'})}
 function toast(m){var e=document.createElement('div');e.className='toast';e.textContent=m;document.getElementById('toastContainer').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='opacity .3s';setTimeout(function(){e.remove()},300)},2000);}
+// ============ IMAGE COMPRESSION (fixes localStorage storage bugs) ============
+function compressImage(dataUrl,maxW,quality,callback){
+  var img=new Image();
+  img.onload=function(){
+    var canvas=document.createElement('canvas');
+    var w=img.width,h=img.height;
+    if(w>maxW){h=Math.round(h*maxW/w);w=maxW}
+    canvas.width=w;canvas.height=h;
+    var ctx=canvas.getContext('2d');
+    ctx.drawImage(img,0,0,w,h);
+    var compressed=canvas.toDataURL('image/jpeg',quality||0.7);
+    callback(compressed);
+  };
+  img.onerror=function(){callback(dataUrl)};
+  img.src=dataUrl;
+}
+
 
 // ============ DIALOG ============
 var _dialogCb=null;
@@ -302,86 +326,135 @@ function triggerAvatarUpload(){
   };
 }
 
-// Books data loaded from external books.js
-// BOOKS defined in books.js
+// OSTA exam data loaded from external osta.js
+// OSTA_SINGLE and OSTA_JUDGE defined in osta.js
 
-// ============ COVER FETCHING ============
-function getBookCoverUrl(book){
-  if(book.isbn) return 'https://covers.openlibrary.org/b/isbn/'+book.isbn+'-M.jpg?default=false';
-  return '';
+// ============ OSTA EXAM MODULE ============
+function getOstaState(){return ld('osta',{wrongQuestions:[],examHistory:[]})}
+function saveOstaState(s){sv('osta',s)}
+
+function renderOsta(area){
+  var st=getOstaState();var wrongCount=st.wrongQuestions.length;
+  area.innerHTML='<div class="osta-grid" style="margin-top:6px">'+
+    '<div class="osta-block osta-start" onclick="startExam()"><div class="osta-icon">📝</div><div class="osta-label">开始考试</div><div class="osta-sub">随机组卷 100题</div></div>'+
+    '<div class="osta-block osta-wrong" onclick="showWrongQuestions()"><div class="osta-icon">❌</div><div class="osta-label">错题记录</div>'+(wrongCount>0?'<div class="osta-badge-count">'+wrongCount+'</div>':'')+'</div>'+
+    '<div class="osta-block osta-bank" onclick="showQuestionBank()"><div class="osta-icon">📚</div><div class="osta-label">题库资料</div><div style="font-size:10px;opacity:.8;margin-top:2px">'+OSTA_SINGLE.length+'单选 + '+OSTA_JUDGE.length+'判断</div></div>'+
+    '</div>'+
+    (st.examHistory.length>0?'<div class="card" style="margin-top:14px"><div class="card-title">📊 最近考试记录</div>'+st.examHistory.slice(-5).reverse().map(function(h){return'<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.04)"><span>'+h.date+'</span><span style="color:'+(h.score>=60?'var(--success)':'var(--danger)')+';font-weight:600">'+h.score+'分</span><span style="color:var(--text2)">'+h.correct+'/'+h.total+'题</span></div>'}).join('')+'</div>':'');
 }
 
-// ============ READING MODULE ============
-function getRS(){return ld('reading',{dailyBooks:[],lastUpdate:'',readBooks:{},streak:0,lastReadDate:''})}
-function saveRS(s){sv('reading',s)}
+var _exam={questions:[],answers:{},currentIdx:0,startTime:0};
 
-function renderReading(area){
-  var state=getRS();var t=td();
-  if(state.lastUpdate!==t){
-    var kept=state.dailyBooks.filter(function(b){return state.readBooks[b]&&state.readBooks[b].time>=600});
-    var keptIds=new Set(kept);var avail=BOOKS.filter(function(b){return !keptIds.has(b.id)});
-    var shuf=avail.sort(function(){return Math.random()-.5});var fresh=[];
-    for(var i=0;i<6-kept.length&&i<shuf.length;i++)fresh.push(shuf[i].id);
-    if(fresh.length<6-kept.length){
-      var more=BOOKS.filter(function(b){return !keptIds.has(b.id)}).sort(function(){return Math.random()-.5});
-      for(var j=0;j<(6-kept.length-fresh.length)&&j<more.length;j++){if(fresh.indexOf(more[j].id)===-1)fresh.push(more[j].id)}
-    }
-    state.dailyBooks=[].concat(kept,fresh.slice(0,6-kept.length));
-    state.lastUpdate=t;saveRS(state);
+function startExam(){
+  var singles=OSTA_SINGLE.slice().sort(function(){return Math.random()-.5}).slice(0,80);
+  var judges=OSTA_JUDGE.slice().sort(function(){return Math.random()-.5}).slice(0,20);
+  _exam.questions=singles.concat(judges);
+  _exam.answers={};_exam.currentIdx=0;_exam.startTime=Date.now();
+  renderExamQuestion();
+}
+
+function renderExamQuestion(){
+  var area=document.getElementById('contentArea');
+  var q=_exam.questions[_exam.currentIdx];
+  var total=_exam.questions.length;
+  var answered=Object.keys(_exam.answers).length;
+  var pct=Math.round(answered/total*100);
+  var isJudge=q.c===true||q.c===false;
+  
+  area.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="exitExam()">← 退出</button><span style="flex:1;font-size:13px;font-weight:600">第 '+(_exam.currentIdx+1)+' / '+total+' 题</span><span style="font-size:11px;color:var(--text2)">'+answered+'题已答</span></div><div class="osta-progress-bar"><div class="osta-progress-fill" style="width:'+pct+'%"></div></div>';
+  
+  if(isJudge){
+    area.innerHTML+='<div class="osta-question"><div class="osta-q-text">'+(_exam.currentIdx<80?'【单选题】':'【判断题】')+' '+q.q+'</div><div class="osta-options"><div class="osta-judge"><div class="osta-opt'+(_exam.answers[_exam.currentIdx]===true?' selected':'')+'" onclick="selectAnswer('+(_exam.currentIdx<80?'\x27'+q.a[0]+'\x27':'true')+','+(_exam.currentIdx<80?'0':'true')+',this)"><span class="osta-opt-letter">'+(_exam.answers[_exam.currentIdx]===true?'✓':'A')+'</span><span>'+(_exam.currentIdx<80?q.a[0]:'正确')+'</span></div><div class="osta-opt'+(_exam.answers[_exam.currentIdx]===false?' selected':'')+'" onclick="selectAnswer('+(_exam.currentIdx<80?'\x27'+q.a[1]+'\x27':'false')+','+(_exam.currentIdx<80?'1':'false')+',this)"><span class="osta-opt-letter">'+(_exam.answers[_exam.currentIdx]===false?'✗':'B')+'</span><span>'+(_exam.currentIdx<80?q.a[1]:'错误')+'</span></div></div></div>';
+  }else{
+    area.innerHTML+='<div class="osta-question"><div class="osta-q-text">【单选题】 '+q.q+'</div><div class="osta-options">'+q.a.map(function(opt,i){var sel=_exam.answers[_exam.currentIdx]!==undefined&&_exam.answers[_exam.currentIdx].idx===i;return'<div class="osta-opt'+(sel?' selected':'')+'" onclick="selectAnswer(\x27'+opt.replace(/'/g,'')+'\x27,'+i+',this)"><span class="osta-opt-letter">'+String.fromCharCode(65+i)+'</span><span>'+opt+'</span></div>'}).join('')+'</div></div>';
   }
-  var books=state.dailyBooks.map(function(id){return BOOKS.find(function(b){return b.id===id})}).filter(Boolean);
-  var streakH=state.streak>0?'<span class="streak-badge">🔥 '+state.streak+'天</span>':'';
-  area.innerHTML='<div style="font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px">📚 今日推荐 — 上下滑动流式阅读 '+streakH+'</div><div class="grid-2" id="bookGrid"></div><div style="margin-top:16px"><h3 style="font-size:14px;font-weight:600;margin-bottom:8px">📖 个人书架</h3><div id="readBooksList" style="font-size:12px;color:var(--text2)"></div></div>';
-  var grid=document.getElementById('bookGrid');
-  books.forEach(function(b){
-    var rd=state.readBooks[b.id];var pct=rd?Math.min(100,Math.round(rd.time/600*100)):0;
-    var card=document.createElement('div');card.className='book-card';card.onclick=function(){openReader(b.id)};
-    var coverUrl=getBookCoverUrl(b);
-    var coverHTML='<div class="book-cover-img" style="background:linear-gradient(135deg,'+b.color+','+b.color+'88)">';
-    if(coverUrl){
-      coverHTML+='<img src="'+coverUrl+'" alt="'+b.title+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'" onload="this.style.display=\'block\'">';
+  
+  area.innerHTML+='<div style="display:flex;gap:8px;margin-top:12px">'+(_exam.currentIdx>0?'<button class="btn btn-outline btn-sm" onclick="prevExamQ()">← 上一题</button>':'')+'<button class="btn btn-primary btn-sm" style="flex:1" onclick="nextExamQ()">'+(_exam.currentIdx===total-1?'提交试卷 →':'下一题 →')+'</button></div>';
+  
+  area.innerHTML+='<div style="display:flex;gap:4px;margin-top:14px;flex-wrap:wrap">'+_exam.questions.map(function(qq,i){var answered=_exam.answers[i]!==undefined;return'<div onclick="jumpExamQ('+i+')" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;cursor:pointer;'+(i===_exam.currentIdx?'background:var(--accent);color:#fff':answered?'background:rgba(52,199,89,.15);color:var(--success)':'background:#f2f2f7;color:var(--text2)')+'">'+(i+1)+'</div>'}).join('')+'</div>';
+}
+
+function selectAnswer(value,idx,el){
+  _exam.answers[_exam.currentIdx]={value:value,idx:idx};
+  renderExamQuestion();
+}
+function nextExamQ(){if(_exam.currentIdx<_exam.questions.length-1){_exam.currentIdx++;renderExamQuestion()}else{submitExam()}}
+function prevExamQ(){if(_exam.currentIdx>0){_exam.currentIdx--;renderExamQuestion()}}
+function jumpExamQ(i){_exam.currentIdx=i;renderExamQuestion()}
+function exitExam(){renderOsta(document.getElementById('contentArea'))}
+
+function submitExam(){
+  var correct=0;var wrongQs=[];var total=_exam.questions.length;
+  _exam.questions.forEach(function(q,i){
+    var ans=_exam.answers[i];
+    if(!ans){wrongQs.push(q);return}
+    if(q.c===true||q.c===false){
+      var ansBool=ans.idx===true||ans.value==='true';
+      if(ansBool===q.c)correct++;else wrongQs.push(q);
+    }else{
+      if(ans.idx===q.c)correct++;else wrongQs.push(q);
     }
-    coverHTML+='</div>';
-    var badge='';
-    if(rd&&rd.time>=600)badge='<div class="book-badge">已读完</div>';
-    else if(pct>0)badge='<div class="book-badge">'+pct+'%</div>';
-    card.innerHTML=badge+coverHTML+'<div class="book-card-body"><h4>'+b.title+'</h4><div class="book-author">'+b.author+'</div><div style="margin-top:3px">'+(rd&&rd.time>=600?'<span class="tag tag-green">已读完</span>':(rd?'<span class="tag tag-orange">'+Math.floor(rd.time/60)+'分钟</span>':'<span class="tag">新推荐</span>'))+'</div></div>';
-    grid.appendChild(card);
   });
-  var rl=document.getElementById('readBooksList');
-  var re=Object.entries(state.readBooks).filter(function(e){return e[1].time>=600});
-  rl.innerHTML=re.length===0?'<div class="empty-state"><p>累计阅读满10分钟的书籍会自动出现在这里</p></div>':re.map(function(e){var b=BOOKS.find(function(b){return b.id===parseInt(e[0])});return b?'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,.04)"><span style="font-size:18px">📖</span><span style="flex:1;font-size:13px">'+b.title+'</span><span style="font-size:11px;color:var(--text2)">'+Math.floor(e[1].time/60)+'分钟</span></div>':''}).join('');
+  var score=Math.round(correct/total*100);
+  var st=getOstaState();
+  st.examHistory.push({date:td()+' '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),score:score,correct:correct,total:total});
+  wrongQs.forEach(function(q){
+    var exists=st.wrongQuestions.find(function(w){return w.q===q.q});
+    if(!exists)st.wrongQuestions.push(q);
+  });
+  saveOstaState(st);
+  showExamResult(score,correct,total,wrongQs.length);
 }
 
-var _re={bk:null,sec:0,iv:null};
-function openReader(id){
-  _re.bk=id;_re.sec=0;var b=BOOKS.find(function(b){return b.id===id});if(!b)return;
-  document.getElementById('readerBookTitle').textContent=b.title;
-  document.getElementById('readerContent').innerHTML=b.content;
-  document.getElementById('readerContent').scrollTop=0;
-  document.getElementById('readerTimer').textContent='00:00';
-  document.getElementById('readerPanel').classList.add('show');
-  _re.iv=setInterval(function(){_re.sec++;var m=Math.floor(_re.sec/60).toString().padStart(2,'0');var s=(_re.sec%60).toString().padStart(2,'0');document.getElementById('readerTimer').textContent=m+':'+s},1000);
+function showExamResult(score,correct,total,wrongCount){
+  var area=document.getElementById('contentArea');
+  var passed=score>=60;
+  area.innerHTML='<div class="osta-score-display"><div style="font-size:48px;margin-bottom:8px">'+(passed?'🎉':'😅')+'</div><div class="osta-score-num" style="color:'+(passed?'var(--success)':'var(--danger)')+'">'+score+'分</div><div style="font-size:14px;color:var(--text2);margin-top:8px">'+(passed?'恭喜通过考试':'未通过，请继续努力')+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">答对 '+correct+'/'+total+' 题 · 错题 '+wrongCount+' 道</div><div style="display:flex;gap:8px;margin-top:20px;justify-content:center"><button class="btn btn-primary" onclick="showWrongQuestions()">查看错题</button><button class="btn btn-outline" onclick="startExam()">再考一次</button><button class="btn btn-outline" onclick="renderOsta(document.getElementById(\'contentArea\'))">返回首页</button></div></div>';
 }
-function closeReader(){
-  clearInterval(_re.iv);document.getElementById('readerPanel').classList.remove('show');
-  if(_re.sec>10&&_re.bk){
-    var st=getRS();if(!st.readBooks[_re.bk])st.readBooks[_re.bk]={time:0,date:td()};
-    st.readBooks[_re.bk].time+=_re.sec;st.readBooks[_re.bk].date=td();st.lastReadDate=td();
-    if(st.readBooks[_re.bk].time>=600&&st.readBooks[_re.bk].time-_re.sec<600)st.streak=(st.streak||0)+1;
-    saveRS(st);
-    renderReading(document.getElementById('contentArea'));
-  }
-  _re.bk=null;_re.sec=0;
+
+function showWrongQuestions(){
+  var st=getOstaState();var qs=st.wrongQuestions;
+  var area=document.getElementById('contentArea');
+  if(qs.length===0){area.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>暂无错题记录</p><p style="font-size:11px">完成考试后，答错的题目会自动归档到这里</p></div><button class="btn btn-outline btn-block" style="margin-top:12px" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button>';return}
+  area.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button><span style="flex:1;font-size:14px;font-weight:600">❌ 错题记录 ('+qs.length+'题)</span><button class="btn btn-danger btn-sm" onclick="clearWrongQuestions()">清空</button></div>';
+  qs.forEach(function(q,i){
+    var isJudge=q.c===true||q.c===false;
+    var correctAns=void 0;
+    if(isJudge){correctAns=q.c?'正确':'错误'}else{correctAns=q.a[q.c]}
+    var div=document.createElement('div');div.className='osta-question';
+    div.innerHTML='<div class="osta-q-text">'+(i+1)+'. '+(isJudge?'【判断题】':'【单选题】')+' '+q.q+'</div>';
+    if(isJudge){
+      div.innerHTML+='<div class="osta-options"><div class="osta-judge"><div class="osta-opt correct"><span class="osta-opt-letter">✓</span><span>正确</span></div><div class="osta-opt"><span class="osta-opt-letter">✗</span><span>错误</span></div></div></div>';
+    }else{
+      div.innerHTML+='<div class="osta-options">'+q.a.map(function(opt,j){var cls=j===q.c?'correct':'';return'<div class="osta-opt '+cls+'"><span class="osta-opt-letter">'+String.fromCharCode(65+j)+'</span><span>'+opt+'</span></div>'}).join('')+'</div>';
+    }
+    div.innerHTML+='<div style="margin-top:8px;font-size:12px;color:var(--success);padding:6px 10px;background:rgba(52,199,89,.08);border-radius:8px">✅ 正确答案：'+correctAns+'</div>';
+    area.appendChild(div);
+  });
+  area.innerHTML+='<button class="btn btn-outline btn-block" style="margin-top:12px" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button>';
 }
-function setFontSize(v){
-  document.getElementById('readerContent').style.setProperty('--font-size',v+'px');
-  document.getElementById('readerContent').style.fontSize=v+'px';
+function clearWrongQuestions(){showConfirm('清空错题','确定清空所有错题记录吗？',function(){var st=getOstaState();st.wrongQuestions=[];saveOstaState(st);renderOsta(document.getElementById('contentArea'));toast('已清空')})}
+
+function showQuestionBank(){
+  var area=document.getElementById('contentArea');
+  var allQs=OSTA_SINGLE.concat(OSTA_JUDGE);
+  area.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button><span style="flex:1;font-size:14px;font-weight:600">📚 题库资料 ('+allQs.length+'题)</span></div>';
+  allQs.forEach(function(q,i){
+    var isJudge=q.c===true||q.c===false;
+    var correctAns=void 0;
+    if(isJudge){correctAns=q.c?'正确':'错误'}else{correctAns=q.a[q.c]}
+    var div=document.createElement('div');div.className='osta-question';
+    div.innerHTML='<div class="osta-q-text">'+(i+1)+'. '+(isJudge?'【判断题】':'【单选题】')+' '+q.q+'</div>';
+    if(isJudge){
+      div.innerHTML+='<div class="osta-options"><div class="osta-judge"><div class="osta-opt'+(q.c?' correct':'')+'"><span class="osta-opt-letter">✓</span><span>正确</span></div><div class="osta-opt'+(!q.c?' correct':'')+'"><span class="osta-opt-letter">✗</span><span>错误</span></div></div></div>';
+    }else{
+      div.innerHTML+='<div class="osta-options">'+q.a.map(function(opt,j){var cls=j===q.c?'correct':'';return'<div class="osta-opt '+cls+'"><span class="osta-opt-letter">'+String.fromCharCode(65+j)+'</span><span>'+opt+'</span></div>'}).join('')+'</div>';
+    }
+    div.innerHTML+='<div style="margin-top:6px;font-size:11px;color:var(--text2)">正确答案：'+correctAns+'</div>';
+    area.appendChild(div);
+  });
 }
-function setLineHeight(v){
-  document.getElementById('readerContent').style.setProperty('--line-height',v);
-  document.getElementById('readerContent').style.lineHeight=v;
-}
+
 
 // ============ ENGLISH MODULE ============
 const EN_DAILY = [
@@ -487,6 +560,7 @@ function renderEnglish(area){
   }
 }
 
+function refreshEn(){var es=getEnState();es.seenIds=es.seenIds||[];var passages=pickEnPassages();_enPassages=passages;var area=document.getElementById('contentArea');var h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">\U0001f5e3\ufe0f \u6bcf\u65e5\u82f1\u8bed\u7ec3\u4e60 <span style="font-size:11px;color:var(--text2);font-weight:400">(30\u5929\u53bb\u91cd \u00b7 3\u7bc7)</span></div><button class="btn btn-outline btn-sm" onclick="refreshEn()">\U0001f504 \u5237\u65b0\u7d20\u6750</button></div>';for(var i=0;i<passages.length;i++){var p=passages[i];var catLabel=p.cat==='news'?'<span class="tag tag-purple" style="margin-left:4px">\u56fd\u9645\u65b0\u95fb</span>':'<span class="tag" style="margin-left:4px">\u65e5\u5e38\u53e3\u8bed</span>';h+='<div class="card"><div class="card-title">'+(i+1)+'. '+p.title+catLabel+'</div><div class="en-passage" id="enText'+i+'" onclick="toggleCN('+i+')">'+buildEnTextHTML(p,i)+'</div><div class="en-passage cn-section" id="cnText'+i+'">'+p.cn+'</div>';h+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><button class="btn btn-outline btn-sm" id="btnEnPlay'+i+'" onclick="toggleEnAudio('+i+')">\U0001f50a \u5168\u6587\u6717\u8bfb</button><button class="btn btn-accent btn-sm" id="btnEnRec'+i+'" onclick="startEnRec('+i+')">\U0001f3a4\ufe0f \u8ddf\u8bfb\u6b64\u6bb5</button><span id="enRecStatus'+i+'" style="font-size:11px;color:var(--text2)"></span></div><div id="enScore'+i+'" style="margin-top:8px"></div></div>';}area.innerHTML=h;toast('\u5df2\u52a0\u8f7d\u5168\u65b03\u7bc7\u7d20\u6750');}
 function toggleCN(idx){var el=document.getElementById('cnText'+idx);if(el)el.classList.toggle('show');}
 
 function showWord(e,word){
@@ -611,9 +685,10 @@ function renderVideos(area){
     vs.seenIds=seenIds;vs.lastUpdate=t;saveVideoState(vs);
   }
   var dv=vs.dailyVideos||playable.slice(0,4);
-  area.innerHTML='<div class="tab-bar"><button class="tab-item active" onclick="switchVTab(\x27all\x27,this)">🎬 全部视频</button><button class="tab-item" onclick="switchVTab(\x27ski\x27,this)">🎿 滑雪二创</button></div><div id="videoList"></div>';
+  area.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">\U0001f525 \u7206\u6b3e\u89c6\u9891</div><button class="btn btn-outline btn-sm" onclick="refreshVideos()">\U0001f504 \u5237\u65b0\u89c6\u9891</button></div><div class="tab-bar"><button class="tab-item active" onclick="switchVTab(\x27all\x27,this)">🎬 全部视频</button><button class="tab-item" onclick="switchVTab(\x27ski\x27,this)">🎿 滑雪二创</button></div><div id="videoList"></div>';
   renderVideoCards('all',dv);
 }
+function refreshVideos(){var vs=getVideoState();vs.lastUpdate='';vs.dailyVideos=[];saveVideoState(vs);renderVideos(document.getElementById('contentArea'));toast('\u5df2\u52a0\u8f7d\u5168\u65b0\u89c6\u9891');}
 function switchVTab(tab,btn){
   document.querySelectorAll('#contentArea .tab-item').forEach(function(t){t.classList.remove('active')});
   btn.classList.add('active');
@@ -660,7 +735,7 @@ function renderCustomExList(cl){
   if(!cl||cl.length===0)return'<div class="empty-state"><div class="empty-icon">📷</div><p>还没有上传跟练动作</p><p style="font-size:11px">拍照上传你的训练动作吧</p></div>';
   return '<h3 style="font-size:14px;font-weight:600;margin-bottom:8px">📋 已上传跟练动作</h3>'+cl.map(function(e,i){
     var img=e.photo?'<img src="'+e.photo+'" style="width:100%;border-radius:var(--radius) var(--radius) 0 0;max-height:200px;object-fit:cover" onclick="previewImg(\x27'+e.photo+'\x27)" loading="lazy">':'<div style="width:100%;height:140px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:48px;border-radius:var(--radius) var(--radius) 0 0">🏋️</div>';
-    return'<div class="card custom-ex-card" style="padding:0;overflow:hidden;position:relative;margin-bottom:12px">'+img+'<div style="padding:14px"><div style="display:flex;align-items:center;justify-content:space-between"><h4 style="font-size:14px;font-weight:600">'+e.name+'</h4><button class="btn btn-sm" style="background:rgba(255,59,48,.1);color:var(--danger);border:none;padding:4px 12px;border-radius:12px" onclick="rmCEx('+i+')">删除</button></div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+(e.desc||'无描述')+'</div><div style="font-size:10px;color:var(--text2);margin-top:4px">'+fd(e.date)+' 上传</div></div></div>';
+    return'<div class="custom-ex-card">'+img+'<div class="ex-body"><div style="display:flex;align-items:center;justify-content:space-between"><div class="ex-title">'+e.name+'</div><button class="btn btn-sm" style="background:rgba(255,59,48,.1);color:var(--danger);border:none;padding:4px 12px;border-radius:12px" onclick="rmCEx('+i+')">删除</button></div><div class="ex-desc">'+(e.desc||'')+'</div><div class="ex-date">'+fd(e.date)+' 上传</div></div></div>';
   }).join('');
 }
 function bindSwipeEvents(){
@@ -704,10 +779,10 @@ function rmEx(i){
   sv('fitness',st);renderFitness(document.getElementById('contentArea'));toast('已删除');
 }
 function uploadExPhoto(){
-  document.getElementById('cameraInput').click();document.getElementById('cameraInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){var img=document.getElementById('exPhotoPreview');img.src=ev.target.result;img.style.display='block';img.dataset.photo=ev.target.result};r.readAsDataURL(f)}
+  document.getElementById('cameraInput').click();document.getElementById('cameraInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,800,0.6,function(comp){var img=document.getElementById('exPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
 }
 function selectExPhoto(){
-  document.getElementById('photoInput').click();document.getElementById('photoInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){var img=document.getElementById('exPhotoPreview');img.src=ev.target.result;img.style.display='block';img.dataset.photo=ev.target.result};r.readAsDataURL(f)}
+  document.getElementById('photoInput').click();document.getElementById('photoInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,800,0.6,function(comp){var img=document.getElementById('exPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
 }
 function saveEx(){
   var n=document.getElementById('customExName').value.trim();
@@ -988,7 +1063,7 @@ function filterThoughts(cat,btn){
   renderThoughtsList(st,cat);
 }
 function uploadThoughtPhoto(){
-  document.getElementById('thoughtPhotoInput').click();document.getElementById('thoughtPhotoInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){var img=document.getElementById('thoughtPhotoPreview');img.src=ev.target.result;img.style.display='block';img.dataset.photo=ev.target.result};r.readAsDataURL(f)}
+  document.getElementById('thoughtPhotoInput').click();document.getElementById('thoughtPhotoInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,800,0.6,function(comp){var img=document.getElementById('thoughtPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
 }
 function saveThought(){
   var i=document.getElementById('thoughtInput');var t=i.value.trim();
@@ -1031,13 +1106,13 @@ function closeImgPreview(){document.getElementById('imgPreviewOverlay').classLis
 // ============ NAVIGATION ============
 function switchPage(page){
   document.querySelectorAll('.nav-item').forEach(function(i){i.classList.toggle('active',i.dataset.page===page)});
-  var titles={reading:'阅读打卡',english:'英语口语练习',videos:'爆款热点视频',fitness:'健身运动打卡',calorie:'吃饭热量计算',thoughts:'灵感笔记'};
+  var titles={osta:'OSTA餐厅服务员考证',english:'英语口语练习',videos:'爆款热点视频',fitness:'健身运动打卡',calorie:'吃饭热量计算',thoughts:'灵感笔记'};
   document.getElementById('pageTitle').textContent=titles[page]||'';
   var area=document.getElementById('contentArea');
   area.scrollTop=0;area.innerHTML='';
   setTimeout(function(){
     try{switch(page){
-      case'reading':renderReading(area);break;
+      case'osta':renderOsta(area);break;
       case'english':renderEnglish(area);break;
       case'videos':renderVideos(area);break;
       case'fitness':renderFitness(area);break;
@@ -1062,7 +1137,7 @@ document.addEventListener('click',function(e){
 
 // ============ INIT ============
 try{
-  switchPage('reading');
+  switchPage('osta');
   setTimeout(function(){
     var ls=document.getElementById('loadingScreen');
     if(ls)ls.style.display='none';
