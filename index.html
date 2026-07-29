@@ -249,7 +249,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">OSTA餐厅服务员考证</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v10</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v11</span>
       <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
       <span style="flex:1"></span>
       <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
@@ -308,7 +308,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   </div>
 </div>
 
-<script src="osta.js?v=10"></script>
+<script src="osta.js?v=11"></script>
 <script>
 // ============ GITHUB GIST CLOUD SYNC LAYER ============
 // iOS Safari and PWA home screen have COMPLETELY SEPARATE localStorage/SW instances.
@@ -344,7 +344,7 @@ var GistSync = {
         public: false,
         files: {
           'workbench-data.json': {
-            content: JSON.stringify({_app:'bice-workbench',_version:'10',_created:new Date().toISOString()})
+            content: JSON.stringify({_app:'bice-workbench',_version:'11',_created:new Date().toISOString()})
           }
         }
       })
@@ -529,7 +529,7 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '10';
+var APP_VERSION = '11';
 var SYNC_KEYS = ['fitness','thoughts','osta_wrong','osta_progress','diet','en_done','en_state','video_state'];
 
 // Version migration: if old version, clear cache on next SW update
@@ -627,10 +627,10 @@ function forceCloudPush() {
   }, 2000);
 }
 
-// ============ SERVICE WORKER REGISTRATION v10 ============
+// ============ SERVICE WORKER REGISTRATION v11 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=10').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=11').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
@@ -688,26 +688,54 @@ function showUpdateBanner(worker) {
 }
 
 // ============ INITIALIZATION ============
-// Version check: fetch version.json to verify deployment is current
+// Version check: fetch version.json; fallback to raw.githubusercontent.com if Pages CDN hasn't refreshed
 function checkAppVersion() {
+  // Try Pages first
   fetch('./version.json?t=' + Date.now(), { cache: 'no-store' })
-    .then(function(r) { return r.json(); })
-    .then(function(remote) {
-      if (remote.version !== APP_VERSION) {
-        console.warn('[Version] Remote v' + remote.version + ' vs local v' + APP_VERSION + ' — forcing update');
-        // Force SW update
-        if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistration) {
-          navigator.serviceWorker.getRegistration().then(function(reg) {
-            if (reg) { reg.unregister().then(function() { location.reload(true); }); }
-            else { location.reload(true); }
-          });
-        } else {
-          location.reload(true);
-        }
-      } else {
-        console.log('[Version] Remote v' + remote.version + ' matches local v' + APP_VERSION);
-      }
-    }).catch(function() { /* ignore network errors */ });
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(remote) { handleVersionResult(remote); })
+    .catch(function(err1) {
+      console.warn('[Version] Pages version.json failed (' + err1.message + '), trying raw GitHub...');
+      // Fallback to raw.githubusercontent.com (bypasses Pages CDN entirely)
+      fetch('https://raw.githubusercontent.com/bice2026/bice-workbench/master/version.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(remote) { handleVersionResult(remote); })
+        .catch(function(err2) {
+          console.warn('[Version] Both sources failed (' + err1.message + ', ' + err2.message + ') — assuming current');
+          // Could not verify — assume current, but set auto-retry
+          setTimeout(checkAppVersion, 30000);
+        });
+    });
+}
+
+function handleVersionResult(remote) {
+  var remoteVer = String(remote.version || remote.sw || '');
+  if (remoteVer !== APP_VERSION) {
+    console.warn('[Version] Remote v' + remoteVer + ' vs local v' + APP_VERSION + ' — forcing update');
+    // Clear all caches
+    if ('caches' in window) {
+      caches.keys().then(function(keys) {
+        keys.forEach(function(k) { caches.delete(k); });
+      });
+    }
+    // Unregister SW
+    if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistration) {
+      navigator.serviceWorker.getRegistration().then(function(reg) {
+        if (reg) { reg.unregister(); }
+        setTimeout(function() { location.reload(true); }, 200);
+      });
+    } else {
+      location.reload(true);
+    }
+  } else {
+    console.log('[Version] Remote v' + remoteVer + ' matches local v' + APP_VERSION + ' ✓');
+  }
 }
 
 // ============ MANUAL DATA EXPORT/IMPORT ============

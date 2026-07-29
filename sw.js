@@ -1,6 +1,6 @@
-// Bice Workbench Service Worker v10
-const CACHE_NAME = 'bice-wb-v10';
-const SW_VERSION = '10';
+// Bice Workbench Service Worker v11
+const CACHE_NAME = 'bice-wb-v11';
+const SW_VERSION = '11';
 const ASSETS = [
   './',
   './index.html',
@@ -11,13 +11,13 @@ const ASSETS = [
   './icon-512.png'
 ];
 
-// ============ INSTALL: cache core assets, skip waiting ============
+// ============ INSTALL: pre-cache assets, skip waiting ============
 self.addEventListener('install', function(event) {
-  console.log('[SW v10] Installing...');
+  console.log('[SW v11] Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
       return cache.addAll(ASSETS).catch(function(err) {
-        console.warn('[SW v10] Some assets failed to pre-cache:', err);
+        console.warn('[SW v11] Some assets failed to pre-cache:', err);
       });
     }).then(function() {
       return self.skipWaiting();
@@ -25,17 +25,15 @@ self.addEventListener('install', function(event) {
   );
 });
 
-// ============ ACTIVATE: purge ALL old caches, claim clients ============
+// ============ ACTIVATE: purge ALL old caches, claim all clients ============
 self.addEventListener('activate', function(event) {
-  console.log('[SW v10] Activating — purging all old caches...');
+  console.log('[SW v11] Activating — removing all non-v11 caches...');
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
         keys.map(function(k) {
-          if (k !== CACHE_NAME) {
-            console.log('[SW v10] Deleting cache:', k);
-            return caches.delete(k);
-          }
+          console.log('[SW v11] Deleting old cache:', k);
+          return caches.delete(k);
         })
       );
     }).then(function() {
@@ -43,35 +41,28 @@ self.addEventListener('activate', function(event) {
     }).then(function() {
       return self.clients.matchAll().then(function(clients) {
         clients.forEach(function(client) {
-          client.postMessage({ type: 'sw-updated', version: 'v10' });
+          client.postMessage({ type: 'sw-updated', version: 'v11' });
         });
       });
     })
   );
 });
 
-// ============ FETCH: network-first for ALL requests ============
-// This guarantees users always see the latest deployed content.
-// Cache is used as offline fallback only.
+// ============ FETCH: network-first for ALL, cache as fallback ============
 self.addEventListener('fetch', function(event) {
   if (event.request.method !== 'GET') return;
 
-  // sw.js itself: NEVER cache, always fetch from network
-  if (event.request.url.indexOf('sw.js') !== -1) {
+  var url = event.request.url;
+
+  // Core files NEVER served from cache — force network always
+  if (url.indexOf('sw.js') !== -1 || url.indexOf('version.json') !== -1) {
     event.respondWith(fetch(event.request));
     return;
   }
 
-  // version.json: NEVER cache, always fetch from network
-  if (event.request.url.indexOf('version.json') !== -1) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // Everything else: network-first, cache as fallback
+  // Everything else: network-first, cache fallback
   event.respondWith(
     fetch(event.request).then(function(response) {
-      // Cache successful responses
       if (response.status === 200 && response.type === 'basic') {
         var clone = response.clone();
         caches.open(CACHE_NAME).then(function(cache) {
@@ -80,23 +71,30 @@ self.addEventListener('fetch', function(event) {
       }
       return response;
     }).catch(function() {
-      // Network failed — serve from cache if available
       return caches.match(event.request);
     })
   );
 });
 
-// ============ MESSAGE: version responses ============
+// ============ MESSAGE handlers ============
 self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'get-version') {
     if (event.source) {
-      event.source.postMessage({
-        type: 'version-response',
-        version: SW_VERSION
-      });
+      event.source.postMessage({ type: 'version-response', version: SW_VERSION });
     }
   }
   if (event.data && event.data.type === 'skip-waiting') {
     self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'clear-all') {
+    event.waitUntil(
+      caches.keys().then(function(keys) {
+        return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+      }).then(function() {
+        if (event.source) {
+          event.source.postMessage({ type: 'cleared' });
+        }
+      })
+    );
   }
 });
