@@ -43,7 +43,7 @@ body{
 .nav-item:active{background:rgba(255,255,255,.15)}
 .nav-item.active{background:rgba(255,255,255,.18);color:#fff}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.header{padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:50;min-height:52px}
+.header{padding:max(14px,env(safe-area-inset-top)) 16px 10px;background:var(--bg);border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:50;min-height:52px}
 .header h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
 .header-date{font-size:12px;color:var(--text2);font-weight:500}
 .content-area{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;overscroll-behavior:contain}
@@ -76,7 +76,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 /* Reader styles */
 .reader-panel{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:999;display:none;flex-direction:column;animation:fadeIn .2s ease}
 .reader-panel.show{display:flex}
-.reader-toolbar{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid rgba(0,0,0,.06);flex-shrink:0;min-height:44px;background:var(--bg);overflow-x:auto}
+.reader-toolbar{display:flex;align-items:center;gap:12px;padding:max(8px,env(safe-area-inset-top)) 14px 8px;border-bottom:1px solid rgba(0,0,0,.06);flex-shrink:0;min-height:44px;background:var(--bg);overflow-x:auto}
 .reader-toolbar select{font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid #ddd}
 .reader-content{flex:1;overflow-y:auto;padding:18px 16px 40px;-webkit-overflow-scrolling:touch;font-size:var(--font-size);line-height:var(--line-height);color:var(--text)}
 .reader-content h2{font-size:22px;margin-bottom:16px;text-align:center}
@@ -204,7 +204,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">阅读打卡</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin-left:4px">v5</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin-left:4px">v7</span>
     </header>
     <div class="content-area" id="contentArea"></div>
   </main>
@@ -247,11 +247,11 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 <input type="file" accept="image/*" id="avatarInput" class="hidden-input">
 <div id="loadingScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:3000"><div style="text-align:center"><div style="font-size:40px;margin-bottom:10px">⏳</div><div style="font-size:14px;color:#86868b">加载中...</div></div></div>
 
-<script src="books.js?v=6"></script>
+<script src="books.js?v=7"></script>
 <script>
 // ============ SERVICE WORKER REGISTRATION ============
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=6').catch(function(){});
+  navigator.serviceWorker.register('./sw.js?v=7').catch(function(){});
 }
 
 // ============ STORAGE HELPERS ============
@@ -438,27 +438,23 @@ en:'The United Nations launched a new global food security initiative aimed at r
 cn:'联合国启动了一项新的全球粮食安全倡议，目标是在2030年前将饥饿人口减少30%。该项目将先进农业技术与传统农耕知识相结合。关键组成部分包括抗旱作物、改进的灌溉系统和更好的食品分销网络。'}
 ];
 
-var _enAudioPaused=false,_enAudioProgress=0,_enAudioTotal=0,_enAudioInterval=null,_enCurrPassage=null;
+var _enPassages=null,_enAudio={idx:-1,paused:false,speaking:false};
 
 function getEnState(){return ld('english',{history:{},seenIds:[]})}
 function saveEnState(s){sv('english',s)}
 
 function pickEnPassages(){
   var es=getEnState();var seen=es.seenIds||[];var thirtyDaysAgo=new Date();thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30);
-  // Clean old entries from seenIds
   var recentSeen=seen.filter(function(s){return new Date(s.date)>thirtyDaysAgo}).map(function(s){return s.id});
-  // Pick 2 daily passages not seen in 30 days
   var availDaily=EN_DAILY.filter(function(p){return recentSeen.indexOf(p.id)===-1});
   if(availDaily.length<2)availDaily=EN_DAILY;
   var shufDaily=availDaily.sort(function(){return Math.random()-.5});
   var dailyPick=shufDaily.slice(0,2);
-  // Pick 1 news passage not seen in 30 days
   var availNews=EN_NEWS.filter(function(p){return recentSeen.indexOf(p.id)===-1});
   if(availNews.length<1)availNews=EN_NEWS;
   var shufNews=availNews.sort(function(){return Math.random()-.5});
   var newsPick=shufNews[0];
   var picked=dailyPick.concat([newsPick]);
-  // Mark as seen
   var t=td();
   picked.forEach(function(p){
     var existing=seen.find(function(s){return s.id===p.id});
@@ -469,31 +465,35 @@ function pickEnPassages(){
   return picked;
 }
 
-function renderEnglish(area){
-  var passages=pickEnPassages();_enCurrPassage=passages[0];
-  var h='<div style="font-size:14px;font-weight:600;margin-bottom:10px">🗣️ 每日英语练习 <span style="font-size:11px;color:var(--text2);font-weight:400">(30天去重)</span></div>';
-  for(var i=0;i<passages.length;i++){
-    var p=passages[i];var catLabel=p.cat==='news'?'<span class="tag tag-purple" style="margin-left:4px">国际新闻</span>':'<span class="tag" style="margin-left:4px">日常口语</span>';
-    h+='<div class="card"><div class="card-title">'+(i+1)+'. '+p.title+catLabel+'</div><div class="en-passage" id="enText'+i+'" onclick="toggleCN('+i+')">'+p.en.split(' ').map(function(w){var clean=w.replace(/[^a-zA-Z']/g,'');if(clean.length>2)return '<span class="word-tap" onclick="event.stopPropagation();showWord(event,\x27'+clean.toLowerCase()+'\x27)">'+w+'</span> ';return w+' '}).join('')+'</div><div class="en-passage cn-section" id="cnText'+i+'">'+p.cn+'</div></div>';
-  }
-  h+='<div class="audio-player"><button class="audio-btn" id="btnAudioPlay" onclick="toggleAudio()">▶</button><div class="audio-progress-wrap" id="audioProgressWrap" onclick="seekAudio(event)"><div class="audio-progress-fill" id="audioProgressFill" style="width:0%"></div></div><span class="audio-time" id="audioTime">00:00</span></div>';
-  h+='<div style="display:flex;gap:8px;margin-top:8px"><button class="btn btn-accent btn-sm" id="btnRecord" onclick="startRec()">🎙️ 录音跟读</button><span id="recStatus" style="font-size:11px;color:var(--text2);align-self:center"></span></div><div id="scoreArea" style="margin-top:12px"></div>';
-  area.innerHTML=h;
-  var tk=td();var es=getEnState();
-  if(es.history[tk]){var s=es.history[tk];document.getElementById('scoreArea').innerHTML='<div style="text-align:center"><div style="font-size:13px;color:var(--text2);margin-bottom:4px">今日已完成 ✓</div><div class="score-ring" style="background:'+(s.score>=80?'rgba(52,199,89,.15)':'rgba(255,149,0,.15)')+';color:'+(s.score>=80?'var(--success)':'var(--warning)')+'">'+s.score+'分</div>'+(s.text?'<div style="font-size:12px;color:var(--text2);margin-top:6px">你说的是: '+s.text+'</div>':'')+(s.wrongWords&&s.wrongWords.length>0?'<div style="font-size:11px;color:var(--danger);margin-top:4px">⚠️ 需注意发音: '+s.wrongWords.join(' | ')+'</div>':'')+'</div>'}
+function buildEnTextHTML(p,i){
+  return p.en.split(' ').map(function(w){var clean=w.replace(/[^a-zA-Z']/g,'');if(clean.length>2)return '<span class="word-tap" onclick="event.stopPropagation();showWord(event,\x27'+clean.toLowerCase()+'\x27)">'+w+'</span> ';return w+' '}).join('');
 }
 
-function toggleCN(idx){
-  var el=document.getElementById('cnText'+idx);
-  if(el)el.classList.toggle('show');
+function renderEnglish(area){
+  var passages=pickEnPassages();_enPassages=passages;
+  var h='<div style="font-size:14px;font-weight:600;margin-bottom:10px">🗣️ 每日英语练习 <span style="font-size:11px;color:var(--text2);font-weight:400">(30天去重 · 3篇)</span></div>';
+  for(var i=0;i<passages.length;i++){
+    var p=passages[i];var catLabel=p.cat==='news'?'<span class="tag tag-purple" style="margin-left:4px">国际新闻</span>':'<span class="tag" style="margin-left:4px">日常口语</span>';
+    h+='<div class="card"><div class="card-title">'+(i+1)+'. '+p.title+catLabel+'</div><div class="en-passage" id="enText'+i+'" onclick="toggleCN('+i+')">'+buildEnTextHTML(p,i)+'</div><div class="en-passage cn-section" id="cnText'+i+'">'+p.cn+'</div>';
+    h+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><button class="btn btn-outline btn-sm" id="btnEnPlay'+i+'" onclick="toggleEnAudio('+i+')">🔊 全文朗读</button><button class="btn btn-accent btn-sm" id="btnEnRec'+i+'" onclick="startEnRec('+i+')">🎙️ 跟读此段</button><span id="enRecStatus'+i+'" style="font-size:11px;color:var(--text2)"></span></div><div id="enScore'+i+'" style="margin-top:8px"></div></div>';
+  }
+  area.innerHTML=h;
+  var tk=td();var es=getEnState();
+  if(es.history[tk]){var s=es.history[tk];
+    for(var j=0;j<passages.length;j++){
+      var el=document.getElementById('enScore'+j);if(!el)continue;
+      el.innerHTML='<div style="text-align:center;font-size:11px;color:'+(s.score>=80?'var(--success)':'var(--warning)')+';padding:6px;background:'+(s.score>=80?'rgba(52,199,89,.08)':'rgba(255,149,0,.08)')+';border-radius:8px">✅ 今日已完成 · '+s.score+'分'+(s.text?' · 你说: '+s.text:'')+(s.wrongWords&&s.wrongWords.length>0?'<br><span style="color:var(--danger);font-size:10px">⚠️ 注意发音: '+s.wrongWords.join(' | ')+'</span>':'')+'</div>';
+    }
+  }
 }
+
+function toggleCN(idx){var el=document.getElementById('cnText'+idx);if(el)el.classList.toggle('show');}
 
 function showWord(e,word){
   var pop=document.getElementById('wordPopup');
   pop.innerHTML='<div class="wp-word">'+word+'<span class="wp-phonetic">/.../</span></div><div class="wp-loading">查询中...</div>';
-  pop.style.display='block';pop.style.left=Math.min(e.clientX-120,window.innerWidth-270)+'px';pop.style.top=(e.clientY-80)+'px';
-  clearTimeout(pop._t);pop._t=setTimeout(function(){pop.style.display='none'},3000);
-  // Fetch from Free Dictionary API
+  pop.style.display='block';pop.style.left=Math.min(e.clientX-120,window.innerWidth-270)+'px';pop.style.top=Math.max(10,e.clientY-80)+'px';
+  clearTimeout(pop._t);pop._t=setTimeout(function(){pop.style.display='none'},4000);
   fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(word))
     .then(function(r){return r.json()})
     .then(function(d){
@@ -509,75 +509,50 @@ function showWord(e,word){
         var eg='';
         if(d[0].meanings[0].definitions[0]&&d[0].meanings[0].definitions[0].example)eg=d[0].meanings[0].definitions[0].example;
         pop.innerHTML='<div class="wp-word">'+word+(phonetic?' <span class="wp-phonetic">'+phonetic+'</span>':'')+'</div>'+(pos?'<div style="margin-bottom:4px"><span class="wp-pos">'+pos+'</span></div>':'')+'<div class="wp-meaning">'+meaning+'</div>'+(eg?'<div class="wp-eg">'+eg+'</div>':'');
-      }else{
-        pop.innerHTML='<div class="wp-word">'+word+'</div><div class="wp-meaning">未找到释义</div>';
-      }
-    }).catch(function(){
-      pop.innerHTML='<div class="wp-word">'+word+'</div><div class="wp-meaning" style="opacity:.5">网络查询失败</div>';
-    });
-  if('speechSynthesis' in window){
-    window.speechSynthesis.cancel();
-    var u=new SpeechSynthesisUtterance(word);u.lang='en-US';u.rate=.7;window.speechSynthesis.speak(u);
-  }
+      }else{pop.innerHTML='<div class="wp-word">'+word+'</div><div class="wp-meaning">未找到释义</div>';}
+    }).catch(function(){pop.innerHTML='<div class="wp-word">'+word+'</div><div class="wp-meaning" style="opacity:.5">网络查询失败</div>';});
+  if('speechSynthesis' in window){window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(word);u.lang='en-US';u.rate=.7;window.speechSynthesis.speak(u);}
 }
 
-function toggleAudio(){
-  if(!('speechSynthesis' in window)){toast('浏览器不支持语音合成');return}
+// Per-passage audio: read full passage
+function toggleEnAudio(idx){
+  if(!('speechSynthesis' in window)||!_enPassages||!_enPassages[idx]){toast('语音合成不可用');return}
   var sp=window.speechSynthesis;
-  if(sp.speaking&&!_enAudioPaused){sp.pause();_enAudioPaused=true;document.getElementById('btnAudioPlay').textContent='▶';return}
-  if(sp.paused){sp.resume();_enAudioPaused=false;document.getElementById('btnAudioPlay').textContent='⏸';return}
-  var text=_enCurrPassage.en;
-  var u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.85;
-  _enAudioPaused=false;_enAudioProgress=0;document.getElementById('btnAudioPlay').textContent='⏸';
-  document.getElementById('audioProgressFill').style.width='0%';document.getElementById('audioTime').textContent='00:00';
-  u.onboundary=function(ev){if(ev.charIndex!==undefined){_enAudioProgress=ev.charIndex;_enAudioTotal=text.length;updateAudioUI()}};
-  u.onend=function(){_enAudioPaused=false;document.getElementById('btnAudioPlay').textContent='▶';document.getElementById('audioProgressFill').style.width='100%';clearInterval(_enAudioInterval)};
-  u.onerror=function(){_enAudioPaused=false;document.getElementById('btnAudioPlay').textContent='▶'};
-  sp.speak(u);_enAudioInterval=setInterval(function(){if(sp.speaking&&!_enAudioPaused)updateAudioUI()},200);
+  if(_enAudio.idx===idx&&sp.speaking&&!_enAudio.paused){sp.pause();_enAudio.paused=true;document.getElementById('btnEnPlay'+idx).textContent='🔊 全文朗读';return}
+  if(_enAudio.idx===idx&&sp.paused){sp.resume();_enAudio.paused=false;document.getElementById('btnEnPlay'+idx).textContent='⏸ 暂停';return}
+  sp.cancel();_enAudio={idx:idx,paused:false,speaking:true};
+  var text=_enPassages[idx].en;var u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.85;
+  document.getElementById('btnEnPlay'+idx).textContent='⏸ 暂停';
+  u.onend=function(){_enAudio.speaking=false;document.getElementById('btnEnPlay'+idx).textContent='🔊 全文朗读';};
+  u.onerror=function(){_enAudio.speaking=false;document.getElementById('btnEnPlay'+idx).textContent='🔊 全文朗读';};
+  sp.speak(u);
 }
-function updateAudioUI(){
-  if(!_enAudioTotal)return;var pct=Math.min(100,(_enAudioProgress/_enAudioTotal)*100);
-  document.getElementById('audioProgressFill').style.width=pct+'%';
-  var totalSec=Math.round(_enAudioTotal/15);var curSec=Math.round(pct/100*totalSec);
-  document.getElementById('audioTime').textContent=Math.floor(curSec/60).toString().padStart(2,'0')+':'+(curSec%60).toString().padStart(2,'0');
-}
-function seekAudio(e){
-  var rect=document.getElementById('audioProgressWrap').getBoundingClientRect();var pct=(e.clientX-rect.left)/rect.width;
-  window.speechSynthesis.cancel();var text=_enCurrPassage.en;
-  var idx=Math.floor(pct*text.length);var sub=text.substring(idx);
-  var u=new SpeechSynthesisUtterance(sub);u.lang='en-US';u.rate=.85;
-  _enAudioPaused=false;_enAudioProgress=idx;_enAudioTotal=text.length;
-  document.getElementById('btnAudioPlay').textContent='⏸';
-  u.onend=function(){_enAudioPaused=false;document.getElementById('btnAudioPlay').textContent='▶';document.getElementById('audioProgressFill').style.width='100%'};
-  u.onerror=function(){_enAudioPaused=false;document.getElementById('btnAudioPlay').textContent='▶'};
-  window.speechSynthesis.speak(u);
-}
-function startRec(){
-  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){toast('浏览器不支持语音识别，请使用Chrome浏览器');return}
+
+// Per-passage voice recording
+function startEnRec(idx){
+  if(!_enPassages||!_enPassages[idx])return;
+  if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)){toast('您的浏览器不支持语音识别');return}
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;var rec=new SR();rec.lang='en-US';rec.interimResults=false;rec.maxAlternatives=1;
-  var btn=document.getElementById('btnRecord');var st=document.getElementById('recStatus');
-  btn.textContent='🔴 录音中...';btn.classList.add('recording');btn.disabled=true;st.textContent='请大声朗读英文...';
-  var timeout=setTimeout(function(){rec.stop();btn.textContent='🎙️ 录音跟读';btn.classList.remove('recording');btn.disabled=false;st.textContent='录音超时，请重试'},20000);
+  var btn=document.getElementById('btnEnRec'+idx);var st=document.getElementById('enRecStatus'+idx);
+  btn.textContent='🔴 录音中...';btn.classList.add('recording');btn.disabled=true;st.textContent='请大声朗读...';
+  var timeout=setTimeout(function(){rec.stop();btn.textContent='🎙️ 跟读此段';btn.classList.remove('recording');btn.disabled=false;st.textContent='⏰ 超时请重试';},25000);
   rec.start();
   rec.onresult=function(ev){
     clearTimeout(timeout);var text=ev.results[0][0].transcript;
-    var orig=_enCurrPassage.en.replace(/[^a-zA-Z\\s]/g,'').toLowerCase().trim();
+    var orig=_enPassages[idx].en.replace(/[^a-zA-Z\\s]/g,'').toLowerCase().trim();
     var said=text.replace(/[^a-zA-Z\\s]/g,'').toLowerCase().trim();
-    var ow=orig.split(/\\s+/);var sw=said.split(/\\s+/);
+    var ow=orig.split(/\s+/);var sw=said.split(/\s+/);
     var matched=0;var wrongWords=[];
-    ow.forEach(function(w){
-      if(sw.indexOf(w)>-1)matched++;
-      else if(w.length>2)wrongWords.push(w);
-    });
+    ow.forEach(function(w){if(sw.indexOf(w)>-1)matched++;else if(w.length>2)wrongWords.push(w);});
     var score=Math.min(100,Math.round((matched/ow.length)*100+10));
     if(wrongWords.length>5)wrongWords=wrongWords.slice(0,5);
-    var sa=document.getElementById('scoreArea');
-    sa.innerHTML='<div style="text-align:center"><div class="score-ring" style="background:'+(score>=80?'rgba(52,199,89,.15)':'rgba(255,149,0,.15)')+';color:'+(score>=80?'var(--success)':'var(--warning)')+'">'+score+'分</div><div class="score-detail">你说的是: '+text+'</div>'+(wrongWords.length>0?'<div class="score-detail" style="color:var(--danger)">⚠️ 需注意: '+wrongWords.join(' · ')+'</div>':'')+'<div style="margin-top:6px;font-size:13px;color:'+(score>=80?'var(--success)':'var(--warning)')+'">'+(score>=80?'👍 不错！继续保持！':'💪 还需练习，再来一次')+'</div></div>';
+    var el=document.getElementById('enScore'+idx);if(!el)return;
+    el.innerHTML='<div style="text-align:center"><div class="score-ring" style="background:'+(score>=80?'rgba(52,199,89,.15)':'rgba(255,149,0,.15)')+';color:'+(score>=80?'var(--success)':'var(--warning)')+'">'+score+'分</div><div class="score-detail">你说的是: '+text+'</div>'+(wrongWords.length>0?'<div class="score-detail" style="color:var(--danger)">⚠️ 需注意: '+wrongWords.join(' · ')+'</div>':'')+'<div style="margin-top:4px;font-size:12px;color:'+(score>=80?'var(--success)':'var(--warning)')+'">'+(score>=80?'👍 不错！':'💪 再来一次')+'</div></div>';
     var es=getEnState();es.history[td()]={score:score,text:text,wrongWords:wrongWords};saveEnState(es);
-    btn.textContent='🎙️ 录音跟读';btn.classList.remove('recording');btn.disabled=false;st.textContent='';
+    btn.textContent='🎙️ 跟读此段';btn.classList.remove('recording');btn.disabled=false;st.textContent='';
   };
-  rec.onerror=function(ev){clearTimeout(timeout);btn.textContent='🎙️ 录音跟读';btn.classList.remove('recording');btn.disabled=false;st.textContent='识别失败: '+(ev.error==='not-allowed'?'请允许麦克风权限':ev.error==='no-speech'?'未检测到语音，请大声朗读':ev.error)};
-  rec.onend=function(){clearTimeout(timeout);btn.textContent='🎙️ 录音跟读';btn.classList.remove('recording');btn.disabled=false;if(st.textContent==='请大声朗读英文...')st.textContent=''};
+  rec.onerror=function(ev){clearTimeout(timeout);btn.textContent='🎙️ 跟读此段';btn.classList.remove('recording');btn.disabled=false;st.textContent='识别失败: '+(ev.error==='not-allowed'?'请在设置中允许麦克风':ev.error==='no-speech'?'未检测到语音':ev.error==='network'?'网络错误请重试':ev.error);};
+  rec.onend=function(){clearTimeout(timeout);if(btn.textContent==='🔴 录音中...'){btn.textContent='🎙️ 跟读此段';btn.classList.remove('recording');btn.disabled=false;}};
 }
 
 // ============ VIDEO MODULE ============
@@ -586,38 +561,48 @@ function saveVideoState(s){sv('videos',s)}
 
 const VIDEOS = [
 {id:1,title:'凌晨5点冲浪，抓到人生最美海浪',platform:'小红书',author:'@浪人阿杰',views:'234万',likes:'18.6万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1GJ411x7h7&page=1&autoplay=0',thumb:'https://picsum.photos/400/300?random=1',color:'#007AFF',emoji:'🏄',
-analysis:'极早时间制造反差+第一视角沉浸感+日出海浪视觉冲击',
-adaptation:'【滑雪二创】凌晨4点开车去雪场，滑第一趟没被压过的粉雪。时间线叙事：起床→装备检查→开车上山→第一缕阳光洒在雪道上→滑下第一趟。强调"粉雪就像刚出炉的面包，只有早起的人才能吃到"。'},
+embedUrl:'https://player.bilibili.com/player.html?bvid=BV1GJ411x7h7&page=1&autoplay=0',color:'#007AFF',emoji:'🏄',
+analysis:'极早时间制造反差+第一视角沉浸感+日出海浪视觉冲击，真实感大于精致感',
+adaptation:'【滑雪二创】凌晨4点开车去雪场，滑第一趟没被压过的粉雪。时间线叙事：起床→装备检查→开车上山→第一缕阳光洒在雪道上→滑下第一趟。强调"粉雪就像刚出炉的面包，只有早起的人才能吃到"。拍摄建议：GoPro第一视角+无人机航拍雪道全景。'},
 {id:2,title:'深海水下摄影，美到窒息',platform:'B站',author:'@海洋之心',views:'567万',likes:'45.2万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1oo4y1S7Gq&page=1&autoplay=0',thumb:'https://picsum.photos/400/300?random=2',color:'#00CED1',emoji:'🤿',
-analysis:'水下世界天然猎奇+慢镜头纯净配乐治愈+海洋环保议题引发共鸣',
-adaptation:'【滑雪二创】在北海道寻找上帝的调色盘。慢镜头拍雪景：雪板划过粉雪溅起的雪雾慢放、树林间的光影、远处雪山的静谧。配同氛围音乐，结尾加环保呼应。'},
+embedUrl:'https://player.bilibili.com/player.html?bvid=BV1oo4y1S7Gq&page=1&autoplay=0',color:'#00CED1',emoji:'🤿',
+analysis:'水下世界天然猎奇+慢镜头纯净配乐治愈+海洋环保议题引发共鸣，情绪过山车是流量密码',
+adaptation:'【滑雪二创】在北海道寻找上帝的调色盘。慢镜头拍雪景：雪板划过粉雪溅起的雪雾慢放、树林间的光影、远处雪山的静谧。配同氛围音乐，结尾加环保理念："这片白色天堂，值得我们用一生去守护"。拍摄建议：DJI Pocket慢动作模式+Godox补光灯。'},
 {id:3,title:'从零学冲浪第30天，进步惊人',platform:'小红书',author:'@小浪花日记',views:'89万',likes:'7.3万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1tW4y1H7F2&page=1&autoplay=0',thumb:'https://picsum.photos/400/300?random=3',color:'#FF69B4',emoji:'🌊',
-analysis:'成长型内容天然追更+从菜鸟到入门真实可信+对比视频制造爽感',
-adaptation:'【滑雪二创】滑雪30天打卡，从推坡到刻滑。做30天对比视频：第1天摔倒合集→第10天推坡→第20天换刃→第30天刻滑。每个阶段加讲解和失败花絮，真实感拉满。'},
-{id:4,title:'潜水遇到鲸鲨，这辈子值了',platform:'抖音',author:'@深蓝潜水员',views:'890万',likes:'62万',
-embedUrl:'',thumb:'https://picsum.photos/400/300?random=4',color:'#4682B4',emoji:'🐋',
-analysis:'鲸鲨=顶流动物IP自带流量+偶遇随机性强化真实感+一生一次的稀缺感',
-adaptation:'【滑雪二创】在野雪道遇到小狐狸，我停下了所有动作。用意外邂逅角度：滑雪时在山林间遇到野生动物，放慢动作保持距离静静观察。文案:"有时候最美的风景不是滑出来的，是等出来的。"'},
+embedUrl:'https://player.bilibili.com/player.html?bvid=BV1tW4y1H7F2&page=1&autoplay=0',color:'#FF69B4',emoji:'🌊',
+analysis:'成长型内容天然追更+从菜鸟到入门真实可信+对比视频制造爽感，干货工具属性增加收藏率',
+adaptation:'【滑雪二创】滑雪30天打卡，从推坡到刻滑。做30天对比视频：第1天摔倒合集→第10天推坡→第20天换刃→第30天刻滑。每个阶段加讲解和失败花絮，真实感拉满。拍摄建议：手机三脚架固定机位自拍+关键动作无人机跟拍。'},
 {id:5,title:'新手第一块冲浪板怎么选',platform:'B站',author:'@装备控小马',views:'156万',likes:'12.1万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1ZV411r7xC&page=1&autoplay=0',thumb:'https://picsum.photos/400/300?random=5',color:'#FF8C00',emoji:'🛹',
-analysis:'实用干货解决真实痛点+横向对比可视化+评论区UGC形成社区',
-adaptation:'【滑雪二创】新手滑雪装备全攻略：5000块搞定全身（附避坑清单）。做性价比装备推荐：雪板/固定器/雪鞋/雪镜/头盔/护具。每样给3个价位选项，标注适合新手的。结尾给购物清单截图。'},
-{id:6,title:'海底求婚，她哭了我笑了',platform:'抖音',author:'@旅行情侣档',views:'1200万',likes:'98万',
-embedUrl:'',thumb:'https://picsum.photos/400/300?random=6',color:'#FF1493',emoji:'💍',
-analysis:'求婚=强情感共鸣+水下场景独特性+反转眼泪=情绪过山车+适合转发艾特',
-adaptation:'【滑雪二创】我带暗恋3年的女生去滑雪，然后在山顶...用山顶惊喜做告白：借口教滑雪，在最美的雪山山顶，日落时分，掏出准备好的手写信和热巧克力。"雪知道所有的秘密，但它不会说话。"'}
+embedUrl:'https://player.bilibili.com/player.html?bvid=BV1ZV411r7xC&page=1&autoplay=0',color:'#FF8C00',emoji:'🛹',
+analysis:'实用干货���决真实痛点+横向对比可视化+评论区UGC形成社区，极早/极晚时间制造稀缺感和自律人设',
+adaptation:'【滑雪二创】新手滑雪装备全攻略：5000块搞定全身（附避坑清单）。做性价比装备推荐：雪板/固定器/雪鞋/雪镜/头盔/护具。每样给3个价位选项，标注适合新手的。结尾给购物清单长截图。拍摄建议：俯拍桌面评测+实拍雪场穿着效果对比。'},
+{id:7,title:'冲浪板涂鸦创意：大海和鲸鱼',platform:'抖音',author:'@海边手艺人',views:'320万',likes:'25.6万',
+embedUrl:'https://player.bilibili.com/player.html?bvid=BV1vW4y1H7S2&page=1&autoplay=0',color:'#7B68EE',emoji:'🎨',
+analysis:'手工创意类天然高完播+翻车到成功的情绪过山车+视觉化成果展示即天然封面素材',
+adaptation:'【滑雪二创】自制滑雪板涂鸦：在纯白雪板上画出夜空极光。从设计稿→上色→喷保护漆全程记录，成果展示放在雪场自然光下拍摄。文案："每一副雪板都是独一无二的艺术品"。拍摄建议：俯拍微距镜头+延时摄影记录创作过程。'},
+{id:8,title:'泡面教程翻车了，但意外好吃',platform:'B站',author:'@厨房小天才',views:'450万',likes:'32.8万',
+embedUrl:'https://player.bilibili.com/player.html?bvid=BV1Yx411V7B3&page=1&autoplay=0',color:'#FF6347',emoji:'🍜',
+analysis:'翻车=天然笑点+反转结局留住观众+日常美食类受众极广，评论区大量UGC互动形成裂变',
+adaptation:'【滑雪二创】滑雪vlog翻车合集：各种摔跤名场面+最后来个完美刻滑反转。用轻松搞笑风格剪辑，配欢快BGM。文案："摔倒99次，第100次终于站稳了"。拍摄建议：头盔GoPro+雪友互拍，关键帧加慢动作和音效。'},
+{id:9,title:'30天练出腹肌，第1天vs第30天',platform:'抖音',author:'@健身教练大刘',views:'890万',likes:'67.3万',
+embedUrl:'https://player.bilibili.com/player.html?bvid=BV1XJ4m1M7Bv&page=1&autoplay=0',color:'#DC143C',emoji:'💪',
+analysis:'身材变化天然视觉冲击+第X天系列完播率极高+前后对比照即最佳封面，健身类永恒流量密码',
+adaptation:'【滑雪二创】30天滑雪体能训练计划：从气喘吁吁到轻松滑全天。每天一个核心+腿部训练动作（波比跳/深蹲/平板支撑），第1天vs第30天雪场体能对比。文案："先练好身体，再去征服雪山"。拍摄建议：固定机位记录训练+雪场滑行对比。'},
+{id:10,title:'在无人沙滩捡到100个贝壳做手工',platform:'小红书',author:'@贝壳少女',views:'189万',likes:'14.2万',
+embedUrl:'https://player.bilibili.com/player.html?bvid=BV1MZ4y1H7R3&page=1&autoplay=0',color:'#FFD700',emoji:'🐚',
+analysis:'寻宝类天然好奇心驱动+手工制作过程=ASMR解压+成品展示高度可分享，适合转发艾特好友',
+adaptation:'【滑雪二创】在雪山捡天然冰晶做项链，把它送给最爱的人。用自然奇遇角度：在雪地中发现冰晶，制作成手工饰品的过程。结尾是温馨的送礼环节。文案："这片雪花来自海拔3000米，只此一枚"。拍摄建议：微距镜头拍冰晶细节+自然光拍摄手工过程。'}
 ];
 
 function renderVideos(area){
   var vs=getVideoState();var t=td();
+  // Filter only playable videos (those with embedUrl)
+  var playable=VIDEOS.filter(function(v){return v.embedUrl&&v.embedUrl.length>0});
   if(vs.lastUpdate!==t){
     var seenIds=vs.seenIds||[];var sevenDaysAgo=new Date();sevenDaysAgo.setDate(sevenDaysAgo.getDate()-7);
     var recentSeen=seenIds.filter(function(s){return new Date(s.date)>sevenDaysAgo}).map(function(s){return s.id});
-    var avail=VIDEOS.filter(function(v){return recentSeen.indexOf(v.id)===-1});
-    if(avail.length<4)avail=VIDEOS;
+    var avail=playable.filter(function(v){return recentSeen.indexOf(v.id)===-1});
+    if(avail.length<4)avail=playable;
     vs.dailyVideos=avail.sort(function(){return Math.random()-.5}).slice(0,4);
     vs.dailyVideos.forEach(function(v){
       var existing=seenIds.find(function(s){return s.id===v.id});
@@ -625,41 +610,31 @@ function renderVideos(area){
     });
     vs.seenIds=seenIds;vs.lastUpdate=t;saveVideoState(vs);
   }
-  var dv=vs.dailyVideos||VIDEOS.slice(0,4);
-  area.innerHTML='<div class="tab-bar"><button class="tab-item active" onclick="switchVTab(\'all\',this)">全部视频</button><button class="tab-item" onclick="switchVTab(\'analysis\',this)">📊 爆款分析</button><button class="tab-item" onclick="switchVTab(\'ski\',this)">🎿 滑雪二创</button></div><div id="videoList"></div>';
+  var dv=vs.dailyVideos||playable.slice(0,4);
+  area.innerHTML='<div class="tab-bar"><button class="tab-item active" onclick="switchVTab(\x27all\x27,this)">🎬 全部视频</button><button class="tab-item" onclick="switchVTab(\x27ski\x27,this)">🎿 滑雪二创</button></div><div id="videoList"></div>';
   renderVideoCards('all',dv);
 }
 function switchVTab(tab,btn){
   document.querySelectorAll('#contentArea .tab-item').forEach(function(t){t.classList.remove('active')});
   btn.classList.add('active');
-  var vs=getVideoState();var dv=vs.dailyVideos||VIDEOS.slice(0,4);
+  var vs=getVideoState();var dv=vs.dailyVideos||VIDEOS.filter(function(v){return v.embedUrl}).slice(0,4);
   renderVideoCards(tab,dv);
 }
 function renderVideoCards(tab,dv){
   var el=document.getElementById('videoList');if(!el)return;var h='';
-  if(tab==='analysis'){
-    h='<div class="card"><div class="card-title">📊 今日爆款规律总结</div><div style="font-size:13px;line-height:1.7;margin-top:6px"><p>1. <strong>真实感</strong>大于精致感 — 第一视角、偶遇比摆拍更受欢迎</p><p>2. <strong>情绪过山车</strong>是流量密码 — 恐惧到惊喜、失败到成功的反转</p><p>3. <strong>成长型内容</strong>天然追更 — 第X天系列完播率极高</p><p>4. <strong>极早/极晚时间</strong>制造稀缺感和自律人设</p><p>5. <strong>干货+工具属性</strong>增加收藏率→持续增长</p><p style="margin-top:8px;font-size:12px;color:var(--text2)">🔁 7天内已推送视频不会重复推荐</p></div></div>';
-    return;
-  }
   dv.forEach(function(v){
     if(tab==='ski'){
-      h+='<div class="card" style="border-left:3px solid #007aff"><div class="card-title">🎿 '+v.emoji+' 滑雪二创方案</div><div style="font-size:13px;line-height:1.7;color:var(--text2);margin-top:6px">'+v.adaptation+'</div></div>';
+      h+='<div class="card" style="border-left:3px solid #007aff"><div class="card-title">🎿 '+v.emoji+' 基于「'+v.title+'」的二创方案</div><div style="font-size:13px;line-height:1.7;color:var(--text2);margin-top:6px">'+v.adaptation+'</div></div>';
     }else{
-      var canEmbed=v.embedUrl&&v.embedUrl.length>0;
-      h+='<div class="video-card"><div class="video-player-inline">';
-      if(canEmbed){
-        h+='<iframe src="'+v.embedUrl+'" style="width:100%;height:200px;border:none" allow="autoplay;encrypted-media" allowfullscreen></iframe>';
-      }else{
-        h+='<div style="width:100%;height:180px;background:linear-gradient(135deg,'+v.color+','+v.color+'88);display:flex;align-items:center;justify-content:center;flex-direction:column"><div style="font-size:48px">'+v.emoji+'</div><div style="font-size:13px;color:#fff;margin-top:8px;opacity:.85">'+v.platform+'平台视频</div><div style="font-size:11px;color:#fff;margin-top:2px;opacity:.6">内嵌预览模式</div></div>';
-      }
-      h+='</div><div class="video-info"><h4>'+v.title+'</h4><div class="video-stat">'+v.platform+' · '+v.author+' · 👁 '+v.views+' · ❤ '+v.likes+'</div><div style="font-size:12px;line-height:1.5;color:var(--text2)">💡 '+v.analysis+'</div></div></div>';
+      h+='<div class="video-card"><div class="video-player-inline"><iframe src="'+v.embedUrl+'" style="width:100%;height:200px;border:none" allow="autoplay;encrypted-media" allowfullscreen loading="lazy"></iframe></div><div class="video-info"><h4>'+v.title+'</h4><div class="video-stat">'+v.platform+' · '+v.author+' · 👁 '+v.views+' · ❤ '+v.likes+'</div><div style="font-size:12px;line-height:1.5;color:var(--text2);margin-top:4px">💡 '+v.analysis+'</div></div></div>';
     }
   });
   el.innerHTML=h;
 }
 
-// ============ FITNESS MODULE (with swipe-to-delete + confirm) ============
-var _swipeStartX=0,_swipeItem=null;
+// ============ FITNESS MODULE (fixed swipe delete + upload persistence) ============
+var _swipeItem=null,_swipeOpen=null;
+
 function renderFitness(area){
   var st=ld('fitness',{exercises:[],custom:[]});var t=td();var log=st.exercises.filter(function(e){return e.date===t});
   area.innerHTML='<div class="card"><div class="card-title">💪 今日运动记录 <span style="font-size:11px;color:var(--text2);font-weight:400">← 左滑删除</span></div>'+
@@ -673,47 +648,49 @@ function renderFitness(area){
     '<div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-outline" onclick="uploadExPhoto()">📸 拍摄</button><button class="btn btn-outline" onclick="selectExPhoto()">🖼️ 选照片</button></div>'+
     '<img id="exPhotoPreview" class="upload-preview" style="display:none">'+
     '<button class="btn btn-primary btn-block" onclick="saveEx()">💾 保存动作</button></div>'+
-    '<div id="customExList" style="margin-top:12px">'+renderCustomExList(st.custom)+'</div>';
-  initSwipeAndLongPress();
+    '<div style="margin-top:12px" id="customExList">'+renderCustomExList(st.custom)+'</div>';
+  // Bind swipe events
+  bindSwipeEvents();
 }
 function renderExList(log){
   if(log.length===0)return'<div style="font-size:12px;color:var(--text2);text-align:center;padding:8px">暂无今日运动记录</div>';
-  return log.map(function(e,i){return'<div class="swipe-item" data-exidx="'+i+'"><div class="swipe-item-delete" onclick="rmEx('+i+')">删除</div><div class="swipe-item-inner" ontouchstart="swipeStart(event)" ontouchmove="swipeMove(event)" ontouchend="swipeEnd(event,'+i+')"><div style="display:flex;align-items:center;gap:8px;width:100%"><span style="font-size:16px">🏃</span><span style="flex:1">'+e.name+'</span><span style="color:var(--text2);font-size:12px">'+e.duration+'分钟</span></div></div></div>'}).join('');
+  return log.map(function(e,i){return'<div class="swipe-item" data-exidx="'+i+'"><div class="swipe-item-delete" onclick="rmEx('+i+')">删除</div><div class="swipe-item-inner"><div style="display:flex;align-items:center;gap:8px;width:100%"><span style="font-size:16px">🏃</span><span style="flex:1">'+e.name+'</span><span style="color:var(--text2);font-size:12px">'+e.duration+'分钟</span></div></div></div>'}).join('');
 }
 function renderCustomExList(cl){
-  if(cl.length===0)return'<div class="empty-state"><p>暂无上传的跟练动作</p></div>';
-  return '<div class="longpress-hint">长按卡片可删除</div>'+cl.map(function(e,i){
-    var img=e.photo?'<img src="'+e.photo+'" style="width:100%;border-radius:var(--radius) var(--radius) 0 0;max-height:200px;object-fit:cover" onclick="previewImg(\''+e.photo+'\')">':'<div style="width:100%;height:120px;background:rgba(0,122,255,.08);display:flex;align-items:center;justify-content:center;font-size:40px;border-radius:var(--radius) var(--radius) 0 0">🏋️</div>';
-    return'<div class="card custom-ex-card" data-cidx="'+i+'" style="padding:0;overflow:hidden;position:relative;cursor:pointer;transition:all .2s">'+img+'<div style="padding:12px"><h4 style="font-size:14px">'+e.name+'</h4><div style="font-size:11px;color:var(--text2);margin-top:2px">'+(e.desc||'无描述')+'</div></div><div class="custom-ex-delete" style="display:none;position:absolute;top:8px;right:8px;background:rgba(255,59,48,.9);color:#fff;border:none;padding:6px 12px;border-radius:14px;font-size:12px;font-weight:600;cursor:pointer;z-index:10" onclick="rmCEx('+i+')">✕ 删除</div></div>';
+  if(!cl||cl.length===0)return'<div class="empty-state"><div class="empty-icon">📷</div><p>还没有上传跟练动作</p><p style="font-size:11px">拍照上传你的训练动作吧</p></div>';
+  return '<h3 style="font-size:14px;font-weight:600;margin-bottom:8px">📋 已上传跟练动作</h3>'+cl.map(function(e,i){
+    var img=e.photo?'<img src="'+e.photo+'" style="width:100%;border-radius:var(--radius) var(--radius) 0 0;max-height:200px;object-fit:cover" onclick="previewImg(\x27'+e.photo+'\x27)" loading="lazy">':'<div style="width:100%;height:140px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:48px;border-radius:var(--radius) var(--radius) 0 0">🏋️</div>';
+    return'<div class="card custom-ex-card" style="padding:0;overflow:hidden;position:relative;margin-bottom:12px">'+img+'<div style="padding:14px"><div style="display:flex;align-items:center;justify-content:space-between"><h4 style="font-size:14px;font-weight:600">'+e.name+'</h4><button class="btn btn-sm" style="background:rgba(255,59,48,.1);color:var(--danger);border:none;padding:4px 12px;border-radius:12px" onclick="rmCEx('+i+')">删除</button></div><div style="font-size:12px;color:var(--text2);margin-top:4px">'+(e.desc||'无描述')+'</div><div style="font-size:10px;color:var(--text2);margin-top:4px">'+fd(e.date)+' 上传</div></div></div>';
   }).join('');
 }
-function initSwipeAndLongPress(){
-  // Long press for custom cards
-  var cards=document.querySelectorAll('.custom-ex-card');var timer;
-  cards.forEach(function(card){
-    card.addEventListener('touchstart',function(){timer=setTimeout(function(){card.querySelector('.custom-ex-delete').style.display='block'},600)});
-    card.addEventListener('touchend',function(){clearTimeout(timer)});
-    card.addEventListener('touchmove',function(){clearTimeout(timer)});
-    card.addEventListener('click',function(e){
-      if(e.target.classList.contains('custom-ex-delete')||e.target.closest('.custom-ex-delete'))return;
-      var d=card.querySelector('.custom-ex-delete');if(d.style.display==='block'){d.style.display='none'}else{card.style.transform='scale(.97)';setTimeout(function(){card.style.transform=''},150)}
+function bindSwipeEvents(){
+  var items=document.querySelectorAll('.swipe-item');
+  items.forEach(function(item){
+    var sx=0;var inner=item.querySelector('.swipe-item-inner');if(!inner)return;
+    inner.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;if(_swipeOpen&&_swipeOpen!==item)closeSwipe(_swipeOpen);});
+    inner.addEventListener('touchmove',function(e){
+      var dx=e.touches[0].clientX-sx;if(dx<0)inner.style.transform='translateX('+Math.max(dx,-80)+'px)';
+    });
+    inner.addEventListener('touchend',function(e){
+      var dx=parseInt((inner.style.transform.match(/-?\d+/)||[0])[0])||0;
+      if(dx<-30){inner.style.transform='translateX(-80px)';_swipeOpen=item;}
+      else{inner.style.transform='translateX(0px)';_swipeOpen=null;}
+    });
+    // Close on tap outside
+    inner.addEventListener('click',function(e){
+      if(inner.style.transform==='translateX(-80px)'){inner.style.transform='translateX(0px)';_swipeOpen=null;e.stopPropagation();}
     });
   });
 }
-function swipeStart(e){_swipeStartX=e.touches[0].clientX;_swipeItem=e.target.closest('.swipe-item')}
-function swipeMove(e){
-  if(!_swipeItem)return;var dx=e.touches[0].clientX-_swipeStartX;
-  var inner=_swipeItem.querySelector('.swipe-item-inner');
-  if(dx<0)inner.style.transform='translateX('+Math.max(dx,-80)+'px)';
+function closeSwipe(item){
+  if(!item)return;var inner=item.querySelector('.swipe-item-inner');if(inner)inner.style.transform='translateX(0px)';
+  _swipeOpen=null;
 }
-function swipeEnd(e,idx){
-  if(!_swipeItem)return;var inner=_swipeItem.querySelector('.swipe-item-inner');
-  var dx=_swipeItem.querySelector('.swipe-item-inner').style.transform.match(/-?\\d+/);
-  var val=dx?parseInt(dx[0]):0;
-  if(val<-40){showConfirm('删除运动记录','确定要删除这条运动记录吗？',function(){rmEx(idx)});inner.style.transform='translateX(0px)'}
-  else{inner.style.transform='translateX(0px)'}
-  _swipeItem=null;
-}
+// Global click to close open swipe
+document.addEventListener('click',function(e){
+  if(_swipeOpen&&!e.target.closest('.swipe-item-delete'))closeSwipe(_swipeOpen);
+});
+
 function logEx(){
   var n=document.getElementById('exName').value.trim();var d=parseInt(document.getElementById('exDuration').value)||0;
   if(!n||!d){toast('请填写名称和时长');return}
@@ -739,74 +716,131 @@ function saveEx(){
   var photo=document.getElementById('exPhotoPreview').dataset.photo||'';
   try{
     var st=ld('fitness',{exercises:[],custom:[]});
-    st.custom.push({name:n,desc:d,photo:photo,date:td()});
+    if(!st.custom)st.custom=[];
+    st.custom.unshift({name:n,desc:d,photo:photo,date:td()});
     sv('fitness',st);
     document.getElementById('customExName').value='';document.getElementById('customExDesc').value='';
     document.getElementById('exPhotoPreview').style.display='none';document.getElementById('exPhotoPreview').dataset.photo='';
-    renderFitness(document.getElementById('contentArea'));toast('动作已保存');
+    renderFitness(document.getElementById('contentArea'));toast('动作已保存 · 卡片永久留存');
   }catch(e){
     toast('保存失败: '+(e.message||'存储空间不足'));
   }
 }
-function rmCEx(i){showConfirm('删除动作','确定要删除这个跟练动作吗？',function(){var st=ld('fitness',{exercises:[],custom:[]});st.custom.splice(i,1);sv('fitness',st);renderFitness(document.getElementById('contentArea'));toast('已删除')})}
+function rmCEx(i){showConfirm('删除动作','确定要删除这个跟练动作吗？',function(){var st=ld('fitness',{exercises:[],custom:[]});if(st.custom)st.custom.splice(i,1);sv('fitness',st);renderFitness(document.getElementById('contentArea'));toast('已删除')})}
 
-// ============ CALORIE MODULE (expanded DB + multi-food) ============
+// ============ CALORIE MODULE (expanded DB + combo parsing + swipe delete) ============
 const FOOD_DB = [
 // Staple foods
 {name:'米饭',cal:116,unit:'100g'},{name:'馒头',cal:223,unit:'100g'},{name:'面条',cal:110,unit:'100g(煮)'},{name:'白粥',cal:46,unit:'100g'},
 {name:'油条',cal:386,unit:'100g'},{name:'包子',cal:227,unit:'100g'},{name:'饺子',cal:240,unit:'100g'},{name:'馄饨',cal:119,unit:'100g'},
 {name:'花卷',cal:211,unit:'100g'},{name:'烧饼',cal:326,unit:'100g'},{name:'小米粥',cal:46,unit:'100g'},{name:'八宝粥',cal:85,unit:'100g'},
 {name:'炒饭',cal:188,unit:'100g'},{name:'炒面',cal:163,unit:'100g'},{name:'拉面',cal:119,unit:'100g'},{name:'刀削面',cal:110,unit:'100g'},
+{name:'粽子',cal:195,unit:'100g'},{name:'汤圆',cal:231,unit:'100g'},{name:'年糕',cal:154,unit:'100g'},{name:'烧麦',cal:220,unit:'100g'},
+{name:'春卷',cal:463,unit:'100g'},{name:'煎饼',cal:236,unit:'100g'},{name:'肉夹馍',cal:228,unit:'100g'},{name:'凉皮',cal:117,unit:'100g'},
 // Eggs & Dairy
-{name:'鸡蛋',cal:144,unit:'100g(1个≈72kcal)'},{name:'煎蛋',cal:196,unit:'100g'},{name:'鸭蛋',cal:180,unit:'100g'},
+{name:'鸡蛋',cal:144,unit:'100g(1个=72kcal)'},{name:'煎蛋',cal:196,unit:'100g'},{name:'鸭蛋',cal:180,unit:'100g'},
+{name:'鹌鹑蛋',cal:160,unit:'100g'},{name:'皮蛋',cal:171,unit:'100g'},{name:'咸鸭蛋',cal:190,unit:'100g'},
 {name:'牛奶',cal:65,unit:'100ml'},{name:'酸奶',cal:72,unit:'100g'},{name:'豆浆',cal:31,unit:'100ml'},
-{name:'豆腐',cal:82,unit:'100g'},{name:'豆腐干',cal:140,unit:'100g'},{name:'腐竹',cal:459,unit:'100g'},
-{name:'奶酪',cal:328,unit:'100g'},{name:'黄油',cal:717,unit:'100g'},
+{name:'豆腐',cal:82,unit:'100g'},{name:'豆腐干',cal:140,unit:'100g'},{name:'腐竹',cal:459,unit:'100g'},{name:'豆腐皮',cal:409,unit:'100g'},
+{name:'豆泡',cal:245,unit:'100g'},{name:'冻豆腐',cal:79,unit:'100g'},{name:'内酯豆腐',cal:49,unit:'100g'},
+{name:'奶酪',cal:328,unit:'100g'},{name:'黄油',cal:717,unit:'100g'},{name:'奶油',cal:879,unit:'100g'},
 // Meat
 {name:'鸡胸肉',cal:133,unit:'100g'},{name:'鸡腿肉',cal:181,unit:'100g'},{name:'鸡翅',cal:194,unit:'100g'},{name:'鸡爪',cal:254,unit:'100g'},
+{name:'鸡胗',cal:118,unit:'100g'},{name:'鸡肉',cal:167,unit:'100g'},{name:'乌鸡',cal:111,unit:'100g'},
 {name:'猪瘦肉',cal:143,unit:'100g'},{name:'猪五花肉',cal:349,unit:'100g'},{name:'排骨',cal:264,unit:'100g'},{name:'猪蹄',cal:260,unit:'100g'},
-{name:'猪肝',cal:129,unit:'100g'},{name:'猪肚',cal:110,unit:'100g'},{name:'猪血',cal:55,unit:'100g'},
+{name:'猪肝',cal:129,unit:'100g'},{name:'猪肚',cal:110,unit:'100g'},{name:'猪血',cal:55,unit:'100g'},{name:'猪大肠',cal:196,unit:'100g'},
+{name:'猪肉',cal:395,unit:'100g(肥瘦)'},{name:'里脊肉',cal:155,unit:'100g'},{name:'肉末',cal:395,unit:'100g(肥瘦)'},
 {name:'牛肉',cal:106,unit:'100g(瘦)'},{name:'牛腩',cal:212,unit:'100g'},{name:'牛排',cal:170,unit:'100g'},{name:'牛腱',cal:117,unit:'100g'},
-{name:'羊肉',cal:203,unit:'100g'},{name:'羊排',cal:246,unit:'100g'},{name:'培根',cal:541,unit:'100g'},{name:'火腿',cal:330,unit:'100g'},
-{name:'香肠',cal:508,unit:'100g'},{name:'腊肉',cal:498,unit:'100g'},{name:'鸭肉',cal:240,unit:'100g'},
+{name:'牛百叶',cal:70,unit:'100g'},{name:'肥牛',cal:250,unit:'100g'},
+{name:'羊肉',cal:203,unit:'100g'},{name:'羊排',cal:246,unit:'100g'},{name:'羊蝎子',cal:180,unit:'100g'},
+{name:'培根',cal:541,unit:'100g'},{name:'火腿',cal:330,unit:'100g'},{name:'香肠',cal:508,unit:'100g'},{name:'腊肉',cal:498,unit:'100g'},
+{name:'腊肠',cal:584,unit:'100g'},{name:'鸭肉',cal:240,unit:'100g'},{name:'鹅肉',cal:251,unit:'100g'},
 // Seafood
-{name:'三文鱼',cal:139,unit:'100g'},{name:'虾仁',cal:48,unit:'100g'},{name:'带鱼',cal:127,unit:'100g'},
+{name:'三文鱼',cal:139,unit:'100g'},{name:'虾仁',cal:48,unit:'100g'},{name:'虾',cal:87,unit:'100g(带壳)'},{name:'带鱼',cal:127,unit:'100g'},
 {name:'鲈鱼',cal:105,unit:'100g'},{name:'金枪鱼',cal:144,unit:'100g'},{name:'鳕鱼',cal:82,unit:'100g'},
 {name:'草鱼',cal:113,unit:'100g'},{name:'鲫鱼',cal:108,unit:'100g'},{name:'鲤鱼',cal:109,unit:'100g'},
 {name:'螃蟹',cal:125,unit:'100g'},{name:'蛤蜊',cal:56,unit:'100g'},{name:'鱿鱼',cal:92,unit:'100g'},{name:'海参',cal:78,unit:'100g'},
+{name:'生蚝',cal:57,unit:'100g'},{name:'扇贝',cal:77,unit:'100g'},{name:'海蜇',cal:33,unit:'100g'},{name:'鲍鱼',cal:84,unit:'100g'},
+{name:'鱼丸',cal:107,unit:'100g'},{name:'虾滑',cal:82,unit:'100g'},
 // Vegetables
 {name:'西兰花',cal:36,unit:'100g'},{name:'番茄',cal:20,unit:'100g'},{name:'黄瓜',cal:16,unit:'100g'},{name:'生菜',cal:13,unit:'100g'},
 {name:'菠菜',cal:28,unit:'100g'},{name:'土豆',cal:81,unit:'100g'},{name:'红薯',cal:61,unit:'100g'},{name:'玉米',cal:112,unit:'100g'},
-{name:'白菜',cal:13,unit:'100g'},{name:'油菜',cal:23,unit:'100g'},{name:'芹菜',cal:14,unit:'100g'},{name:'茄子',cal:21,unit:'100g'},
-{name:'青椒',cal:22,unit:'100g'},{name:'豆角',cal:34,unit:'100g'},{name:'蘑菇',cal:24,unit:'100g'},{name:'木耳',cal:205,unit:'100g(干)'},
-{name:'海带',cal:14,unit:'100g'},{name:'胡萝卜',cal:39,unit:'100g'},{name:'白萝卜',cal:21,unit:'100g'},{name:'山药',cal:57,unit:'100g'},
+{name:'白菜',cal:13,unit:'100g'},{name:'大白菜',cal:13,unit:'100g'},{name:'娃娃菜',cal:13,unit:'100g'},{name:'油菜',cal:23,unit:'100g'},
+{name:'芹菜',cal:14,unit:'100g'},{name:'茄子',cal:21,unit:'100g'},{name:'青椒',cal:22,unit:'100g'},
+{name:'豆角',cal:34,unit:'100g'},{name:'豇豆',cal:32,unit:'100g'},{name:'四季豆',cal:31,unit:'100g'},
+{name:'蘑菇',cal:24,unit:'100g'},{name:'香菇',cal:26,unit:'100g(鲜)'},{name:'金针菇',cal:32,unit:'100g'},
+{name:'木耳',cal:205,unit:'100g(干)'},{name:'银耳',cal:200,unit:'100g(干)'},
+{name:'海带',cal:14,unit:'100g'},{name:'紫菜',cal:207,unit:'100g(干)'},
+{name:'胡萝卜',cal:39,unit:'100g'},{name:'白萝卜',cal:21,unit:'100g'},{name:'山药',cal:57,unit:'100g'},
 {name:'莲藕',cal:73,unit:'100g'},{name:'南瓜',cal:23,unit:'100g'},{name:'洋葱',cal:40,unit:'100g'},{name:'蒜薹',cal:66,unit:'100g'},
 {name:'莴笋',cal:15,unit:'100g'},{name:'西葫芦',cal:18,unit:'100g'},{name:'菜花',cal:24,unit:'100g'},{name:'冬瓜',cal:11,unit:'100g'},
+{name:'丝瓜',cal:20,unit:'100g'},{name:'苦瓜',cal:22,unit:'100g'},{name:'秋葵',cal:37,unit:'100g'},{name:'竹笋',cal:23,unit:'100g'},
+{name:'豆芽',cal:16,unit:'100g'},{name:'绿豆芽',cal:18,unit:'100g'},{name:'黄豆芽',cal:44,unit:'100g'},
+{name:'韭菜',cal:26,unit:'100g'},{name:'香菜',cal:31,unit:'100g'},{name:'香葱',cal:30,unit:'100g'},
+{name:'蒜',cal:128,unit:'100g'},{name:'姜',cal:46,unit:'100g'},{name:'辣椒',cal:38,unit:'100g(鲜)'},
 // Fruits
 {name:'苹果',cal:53,unit:'100g'},{name:'香蕉',cal:93,unit:'100g'},{name:'橙子',cal:48,unit:'100g'},{name:'西瓜',cal:31,unit:'100g'},
 {name:'葡萄',cal:44,unit:'100g'},{name:'草莓',cal:32,unit:'100g'},{name:'芒果',cal:65,unit:'100g'},{name:'猕猴桃',cal:61,unit:'100g'},
 {name:'桃子',cal:48,unit:'100g'},{name:'梨',cal:51,unit:'100g'},{name:'柚子',cal:42,unit:'100g'},{name:'樱桃',cal:46,unit:'100g'},
 {name:'菠萝',cal:44,unit:'100g'},{name:'蓝莓',cal:57,unit:'100g'},{name:'牛油果',cal:171,unit:'100g'},
-// Chinese dishes
-{name:'番茄炒蛋',cal:120,unit:'100g'},{name:'宫保鸡丁',cal:170,unit:'100g'},{name:'鱼香肉丝',cal:167,unit:'100g'},
-{name:'麻婆豆腐',cal:105,unit:'100g'},{name:'糖醋里脊',cal:220,unit:'100g'},{name:'红烧肉',cal:305,unit:'100g'},
-{name:'回锅肉',cal:262,unit:'100g'},{name:'水煮鱼',cal:153,unit:'100g'},{name:'酸菜鱼',cal:98,unit:'100g'},
-{name:'地三鲜',cal:89,unit:'100g'},{name:'干煸豆角',cal:120,unit:'100g'},{name:'醋溜白菜',cal:35,unit:'100g'},
+{name:'榴莲',cal:147,unit:'100g'},{name:'火龙果',cal:55,unit:'100g'},{name:'荔枝',cal:71,unit:'100g'},
+{name:'龙眼',cal:71,unit:'100g'},{name:'山竹',cal:72,unit:'100g'},{name:'椰子',cal:241,unit:'100g(肉)'},
+{name:'柿子',cal:74,unit:'100g'},{name:'石榴',cal:73,unit:'100g'},{name:'哈密瓜',cal:34,unit:'100g'},
+// Chinese dishes - stir-fries
+{name:'番茄炒蛋',cal:120,unit:'100g'},{name:'西红柿炒鸡蛋',cal:120,unit:'100g'},{name:'青椒炒蛋',cal:98,unit:'100g'},
+{name:'韭菜炒蛋',cal:110,unit:'100g'},{name:'洋葱炒蛋',cal:105,unit:'100g'},{name:'木耳炒蛋',cal:95,unit:'100g'},
+{name:'宫保鸡丁',cal:170,unit:'100g'},{name:'鱼香肉丝',cal:167,unit:'100g'},{name:'糖醋里脊',cal:220,unit:'100g'},
+{name:'红烧肉',cal:305,unit:'100g'},{name:'回锅肉',cal:262,unit:'100g'},{name:'京酱肉丝',cal:178,unit:'100g'},
+{name:'木须肉',cal:135,unit:'100g'},{name:'锅包肉',cal:242,unit:'100g'},{name:'葱爆羊肉',cal:198,unit:'100g'},
+{name:'辣子鸡',cal:205,unit:'100g'},{name:'黄焖鸡',cal:162,unit:'100g'},{name:'大盘鸡',cal:128,unit:'100g'},
+{name:'麻婆豆腐',cal:105,unit:'100g'},{name:'家常豆腐',cal:125,unit:'100g'},{name:'豆腐烧肉',cal:180,unit:'100g'},
+{name:'地三鲜',cal:89,unit:'100g'},{name:'干煸豆角',cal:120,unit:'100g'},{name:'蒜蓉西兰花',cal:52,unit:'100g'},
+{name:'醋溜白菜',cal:35,unit:'100g'},{name:'酸辣土豆丝',cal:92,unit:'100g'},{name:'炒土豆丝',cal:88,unit:'100g'},
+{name:'蚝油生菜',cal:28,unit:'100g'},{name:'清炒时蔬',cal:35,unit:'100g'},{name:'手撕包菜',cal:48,unit:'100g'},
+// Chinese dishes - stews & braised
+{name:'白菜炖豆腐',cal:68,unit:'100g'},{name:'猪肉炖粉条',cal:185,unit:'100g'},{name:'酸菜炖排骨',cal:145,unit:'100g'},
+{name:'萝卜炖牛腩',cal:98,unit:'100g'},{name:'土豆炖牛肉',cal:115,unit:'100g'},{name:'红烧排骨',cal:225,unit:'100g'},
+{name:'红烧牛肉',cal:178,unit:'100g'},{name:'红烧鸡块',cal:145,unit:'100g'},{name:'红烧鱼',cal:115,unit:'100g'},
+{name:'清炖羊肉',cal:165,unit:'100g'},{name:'羊肉炖萝卜',cal:120,unit:'100g'},{name:'排骨莲藕汤',cal:85,unit:'100g'},
+{name:'冬瓜排骨汤',cal:72,unit:'100g'},{name:'番茄牛腩',cal:108,unit:'100g'},{name:'酸汤肥牛',cal:135,unit:'100g'},
+{name:'小鸡炖蘑菇',cal:118,unit:'100g'},{name:'香菇炖鸡',cal:125,unit:'100g'},{name:'清炖鸡汤',cal:78,unit:'100g'},
+// Chinese dishes - fish & seafood
+{name:'水煮鱼',cal:153,unit:'100g'},{name:'酸菜鱼',cal:98,unit:'100g'},{name:'清蒸鱼',cal:92,unit:'100g'},
+{name:'红烧带鱼',cal:148,unit:'100g'},{name:'香煎三文鱼',cal:208,unit:'100g'},{name:'干烧鱼',cal:142,unit:'100g'},
+{name:'椒盐虾',cal:172,unit:'100g'},{name:'白灼虾',cal:82,unit:'100g'},{name:'蒜蓉粉丝蒸虾',cal:125,unit:'100g'},
+// Chinese dishes - noodles & rice
 {name:'蛋炒饭',cal:188,unit:'100g'},{name:'扬州炒饭',cal:165,unit:'100g'},{name:'鸡蛋灌饼',cal:245,unit:'100g'},
 {name:'牛肉面',cal:115,unit:'100g'},{name:'炸酱面',cal:163,unit:'100g'},{name:'热干面',cal:153,unit:'100g'},
-{name:'黄焖鸡',cal:162,unit:'100g'},{name:'大盘鸡',cal:128,unit:'100g'},{name:'麻辣香锅',cal:195,unit:'100g'},
+{name:'担担面',cal:145,unit:'100g'},{name:'油泼面',cal:168,unit:'100g'},{name:'打卤面',cal:132,unit:'100g'},
+{name:'葱油拌面',cal:180,unit:'100g'},{name:'清汤面',cal:85,unit:'100g'},{name:'阳春面',cal:95,unit:'100g'},
+{name:'炒河粉',cal:175,unit:'100g'},{name:'干炒牛河',cal:192,unit:'100g'},{name:'炒米粉',cal:160,unit:'100g'},
+// Hot pot & malatang
 {name:'火锅',cal:350,unit:'一人份(约1000g)'},{name:'麻辣烫',cal:250,unit:'一人份'},{name:'冒菜',cal:220,unit:'一人份'},
+{name:'麻辣香锅',cal:195,unit:'100g'},{name:'串串香',cal:230,unit:'一人份'},
+// Soups
+{name:'蛋花汤',cal:27,unit:'100g'},{name:'紫菜蛋花汤',cal:30,unit:'100g'},{name:'番茄蛋汤',cal:25,unit:'100g'},
+{name:'酸辣汤',cal:38,unit:'100g'},{name:'银耳莲子羹',cal:55,unit:'100g'},{name:'米酒汤圆',cal:168,unit:'100g'},
+// Instant & fast food
 {name:'螺蛳粉',cal:382,unit:'一碗(约300g)'},{name:'酸辣粉',cal:365,unit:'一碗(约280g)'},{name:'兰州拉面',cal:340,unit:'一碗(约500g)'},
-// Snacks & Drinks
+{name:'方便面',cal:472,unit:'一包(面饼100g)'},{name:'米线',cal:365,unit:'一碗(约350g)'},{name:'过桥米线',cal:380,unit:'一碗'},
+// Breakfast
+{name:'豆浆油条',cal:420,unit:'一份(豆浆+油条)'},{name:'豆腐脑',cal:48,unit:'100g'},{name:'茶叶蛋',cal:68,unit:'一个'},
+{name:'小米粥配咸菜',cal:85,unit:'一碗+小菜'},{name:'包子鸡蛋',cal:300,unit:'两个包子+一个蛋'},
+// Snacks & drinks
 {name:'炸鸡',cal:279,unit:'100g'},{name:'汉堡',cal:320,unit:'一个'},{name:'披萨',cal:266,unit:'100g'},
 {name:'薯条',cal:312,unit:'100g'},{name:'蛋糕',cal:347,unit:'100g'},{name:'冰淇淋',cal:180,unit:'100g'},
 {name:'巧克力',cal:546,unit:'100g'},{name:'饼干',cal:433,unit:'100g'},{name:'面包',cal:312,unit:'100g'},
 {name:'可乐',cal:42,unit:'100ml'},{name:'雪碧',cal:49,unit:'100ml'},{name:'啤酒',cal:32,unit:'100ml'},
-{name:'白酒',cal:298,unit:'100ml'},{name:'咖啡',cal:2,unit:'100ml(黑咖啡)'},{name:'拿铁',cal:56,unit:'100ml'},
-{name:'奶茶',cal:65,unit:'100ml'},{name:'果汁',cal:45,unit:'100ml'},
-// Nuts & Others
+{name:'白酒',cal:298,unit:'100ml'},{name:'红酒',cal:85,unit:'100ml'},
+{name:'咖啡',cal:2,unit:'100ml(黑)'},{name:'拿铁',cal:56,unit:'100ml'},{name:'卡布奇诺',cal:42,unit:'100ml'},
+{name:'奶茶',cal:65,unit:'100ml'},{name:'果汁',cal:45,unit:'100ml'},{name:'豆奶',cal:43,unit:'100ml'},
+// Nuts & seeds
 {name:'核桃',cal:627,unit:'100g'},{name:'花生',cal:574,unit:'100g'},{name:'瓜子',cal:582,unit:'100g'},
-{name:'杏仁',cal:578,unit:'100g'},{name:'腰果',cal:553,unit:'100g'},{name:'芝麻酱',cal:618,unit:'100g'},
+{name:'杏仁',cal:578,unit:'100g'},{name:'腰果',cal:553,unit:'100g'},{name:'开心果',cal:562,unit:'100g'},
+{name:'松子',cal:644,unit:'100g'},{name:'榛子',cal:561,unit:'100g'},
+// Condiments & oils
+{name:'芝麻酱',cal:618,unit:'100g'},{name:'花生酱',cal:594,unit:'100g'},{name:'豆瓣酱',cal:178,unit:'100g'},
+{name:'老干妈',cal:758,unit:'100g'},{name:'番茄酱',cal:83,unit:'100g'},{name:'沙拉酱',cal:724,unit:'100g'},
 {name:'蜂蜜',cal:321,unit:'100g'},{name:'白糖',cal:400,unit:'100g'},{name:'食用油',cal:899,unit:'100g'}
 ];
 
@@ -816,55 +850,93 @@ function renderCalorie(area){
   var bmr=(p.height&&p.weight&&p.age)?(p.gender==='male'?Math.round(66.5+13.75*p.weight+5.003*p.height-6.755*p.age):Math.round(655+9.563*p.weight+1.85*p.height-4.676*p.age)):null;
   area.innerHTML='<div class="card"><div class="card-title">👤 身体数据</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px"><div><label style="font-size:11px;color:var(--text2)">身高(cm)</label><input class="input" id="calHeight" type="number" value="'+(p.height||'')+'" placeholder="170"></div><div><label style="font-size:11px;color:var(--text2)">体重(kg)</label><input class="input" id="calWeight" type="number" value="'+(p.weight||'')+'" placeholder="65"></div><div><label style="font-size:11px;color:var(--text2)">年龄</label><input class="input" id="calAge" type="number" value="'+(p.age||'')+'" placeholder="25"></div><div><label style="font-size:11px;color:var(--text2)">性别</label><select class="input" id="calGender"><option value="male"'+(p.gender==='male'?' selected':'')+'>男</option><option value="female"'+(p.gender==='female'?' selected':'')+'>女</option></select></div></div><button class="btn btn-primary btn-block" style="margin-top:10px" onclick="updateCP()">保存数据</button></div>'+
   (bmi?'<div class="card"><div style="display:flex;align-items:center;justify-content:space-around;text-align:center"><div><div style="font-size:26px;font-weight:700">'+bmi+'</div><div style="font-size:11px;color:var(--text2)">BMI</div></div><div><div style="font-size:26px;font-weight:700">'+bmr+'</div><div style="font-size:11px;color:var(--text2)">基础代谢</div></div><div><div style="font-size:26px;font-weight:700">'+(bmr?Math.round(bmr*1.55):'')+'</div><div style="font-size:11px;color:var(--text2)">日需(kcal)</div></div></div></div>':'')+
-  '<div class="card"><div class="card-title">🍽️ 记录饮食 <span style="font-size:11px;color:var(--text2);font-weight:400">支持混合食材</span></div><div style="position:relative"><input class="input" placeholder="输入食物(如:白菜豆腐、米饭鸡胸肉)...支持多食材混合输入" id="foodSearch" oninput="searchFood()" autocomplete="off" style="border-radius:var(--radius-sm) var(--radius-sm) 0 0"><div class="food-search-results" id="foodSearchResults"></div></div><div style="display:flex;gap:8px;margin-top:8px"><input class="input" placeholder="总热量(kcal)" id="foodCal" style="width:100px;text-align:center" type="number"><input class="input" placeholder="份量(默认1份)" id="foodAmount" style="flex:1"></div><div id="foodBreakdown" style="font-size:11px;color:var(--text2);margin-top:4px"></div><button class="btn btn-primary btn-block" style="margin-top:8px" onclick="logFood()">➕ 记录</button><div id="calSummary" style="font-size:11px;color:var(--text2);margin-top:4px"></div><div id="foodLogList" style="margin-top:10px;font-size:12px"></div></div><div class="card" id="adjustCard" style="display:none"><div class="card-title">💡 次日调整建议</div><div id="adjustContent" style="font-size:13px;line-height:1.7"></div></div>';
+  '<div class="card"><div class="card-title">🍽️ 记录饮食 <span style="font-size:11px;color:var(--text2);font-weight:400">支持单品/组合菜自动拆分</span></div><div style="position:relative"><input class="input" placeholder="输入食物（如:白菜炖豆腐、宫保鸡丁、米饭鸡胸肉西兰花）..." id="foodSearch" oninput="searchFood()" autocomplete="off" style="border-radius:var(--radius-sm) var(--radius-sm) 0 0"><div class="food-search-results" id="foodSearchResults"></div></div><div id="foodBreakdown" style="font-size:11px;color:var(--text2);margin-top:4px"></div><div style="display:flex;gap:8px;margin-top:8px"><input class="input" placeholder="总热量(kcal)" id="foodCal" style="width:100px;text-align:center" type="number"><input class="input" placeholder="份量(默认1份)" id="foodAmount" style="flex:1"></div><button class="btn btn-primary btn-block" style="margin-top:8px" onclick="logFood()">➕ 记录</button><div id="calSummary" style="font-size:11px;color:var(--text2);margin-top:4px"></div><div id="foodLogList" style="margin-top:10px;font-size:12px"></div></div><div class="card" id="adjustCard" style="display:none"><div class="card-title">💡 次日调整建议</div><div id="adjustContent" style="font-size:13px;line-height:1.7"></div></div>';
   renderFoodLogs();
 }
+
 function updateCP(){
   var h=parseFloat(document.getElementById('calHeight').value)||null;var w=parseFloat(document.getElementById('calWeight').value)||null;
   var a=parseInt(document.getElementById('calAge').value)||null;var g=document.getElementById('calGender').value;
   var st=ld('calorie',{profile:{},history:{}});st.profile={height:h,weight:w,age:a,gender:g};sv('calorie',st);
   renderCalorie(document.getElementById('contentArea'));toast('已更新');
 }
+
+// Combo dish splitting: "白菜炖豆腐" -> find individual ingredients + combined dish
+function splitComboFood(q){
+  var exact=FOOD_DB.find(function(f){return f.name===q});
+  if(exact)return[{name:exact.name,cal:exact.cal,unit:exact.unit,source:'数据库匹配'}];
+  var fuzzy=FOOD_DB.filter(function(f){return f.name.indexOf(q)>-1||q.indexOf(f.name)>-1});
+  if(fuzzy.length>0)return fuzzy.slice(0,1).map(function(f){return {name:f.name,cal:f.cal,unit:f.unit,source:'模糊匹配'}});
+  var connectors=['炖','炒','烧','煮','蒸','拌','焖','煎','炸','烤','烩','煨','煲','溜','扒'];
+  var splitBy=null;var splitIdx=-1;
+  for(var i=0;i<connectors.length;i++){var idx=q.indexOf(connectors[i]);if(idx>0&&idx<q.length-1){splitBy=connectors[i];splitIdx=idx;break;}}
+  if(splitBy){
+    var part1=q.substring(0,splitIdx);var part2=q.substring(splitIdx+splitBy.length);var ingredients=[];
+    var f1=FOOD_DB.find(function(f){return f.name===part1||f.name.indexOf(part1)>-1||part1.indexOf(f.name)>-1});
+    var f2=FOOD_DB.find(function(f){return f.name===part2||f.name.indexOf(part2)>-1||part2.indexOf(f.name)>-1});
+    if(f1)ingredients.push({name:f1.name,cal:f1.cal,unit:f1.unit,source:'拆分:主料'});
+    if(f2)ingredients.push({name:f2.name,cal:f2.cal,unit:f2.unit,source:'拆分:配料'});
+    if(ingredients.length>=1)ingredients.push({name:'烹调油',cal:899,unit:'10g(约90kcal)',source:'自动估算:炒菜用油'});
+    if(ingredients.length>=2)return ingredients;
+  }
+  var commonFoods=['豆腐','鸡蛋','白菜','土豆','番茄','肉','鸡','牛','羊','猪','鱼','虾','面','饭','菜','菇','瓜','豆','椒','笋','芹'];
+  var foundFrags=[];var remaining=q;
+  for(var j=0;j<commonFoods.length;j++){
+    var pos=remaining.indexOf(commonFoods[j]);
+    if(pos>-1){var match=FOOD_DB.find(function(f){return f.name===commonFoods[j]||f.name.indexOf(commonFoods[j])>-1});if(match)foundFrags.push({name:match.name,cal:match.cal,unit:match.unit,source:'食材拆分'});remaining=remaining.replace(commonFoods[j],'');}
+  }
+  if(foundFrags.length>0)return foundFrags;
+  return [];
+}
+
 function searchFood(){
   var q=document.getElementById('foodSearch').value.trim();var res=document.getElementById('foodSearchResults');
-  if(q.length<1){res.classList.remove('show');return}
-  // Try multi-food split
-  var terms=q.split(/[,，、\s+]+/).filter(Boolean);
-  var matches=[];
-  terms.forEach(function(t){
-    var found=FOOD_DB.filter(function(f){return f.name.indexOf(t)>-1||t.indexOf(f.name)>-1}).slice(0,3);
-    found.forEach(function(f){if(matches.indexOf(f)===-1)matches.push(f)});
-  });
-  if(matches.length===0){matches=FOOD_DB.filter(function(f){return f.name.indexOf(q)>-1||q.indexOf(f.name)>-1}).slice(0,8)}
+  var bd=document.getElementById('foodBreakdown');
+  if(q.length<1){res.classList.remove('show');bd.innerHTML='';return}
+  var split=splitComboFood(q);
+  if(split.length>0){
+    var totalCal=split.reduce(function(s,f){return s+f.cal},0);
+    bd.innerHTML='<div style="padding:6px 8px;background:rgba(0,122,255,.05);border-radius:8px;margin-bottom:4px">🔍 '+split.map(function(s){return s.name+'('+s.cal+'kcal/'+s.unit+') ['+s.source+']'}).join(' + ')+' = <b>约'+totalCal+' kcal</b></div>';
+    document.getElementById('foodCal').value=totalCal;
+  }else{bd.innerHTML='<div style="font-size:11px;color:var(--danger);padding:4px 0">⚠️ 未识别，请手动输入热量</div>';document.getElementById('foodCal').value='';}
+  var matches=FOOD_DB.filter(function(f){return f.name.indexOf(q)>-1||q.indexOf(f.name)>-1}).slice(0,8);
   if(matches.length===0){res.classList.remove('show');return}
   res.classList.add('show');
-  res.innerHTML=matches.map(function(f){return'<div class="food-search-item" onclick="selectFood(\''+f.name+'\','+f.cal+',\''+f.unit+'\')">'+f.name+' — '+f.cal+' kcal/'+f.unit+'</div>'}).join('');
+  res.innerHTML=matches.map(function(f){return'<div class="food-search-item" onclick="selectFood(\x27'+f.name+'\x27,'+f.cal+',\x27'+f.unit+'\x27)">'+f.name+' — '+f.cal+' kcal/'+f.unit+'</div>'}).join('');
 }
+
 function selectFood(name,cal,unit){
   document.getElementById('foodSearch').value=name;
   document.getElementById('foodCal').value=cal;
   document.getElementById('foodAmount').placeholder='份量(默认'+unit+')';
   document.getElementById('foodSearchResults').classList.remove('show');
+  var bd=document.getElementById('foodBreakdown');
+  bd.innerHTML='<div style="font-size:11px;color:var(--success);padding:4px 0">✅ '+name+' · '+cal+' kcal/'+unit+'</div>';
 }
+
 function logFood(){
   var n=document.getElementById('foodSearch').value.trim();var c=parseInt(document.getElementById('foodCal').value)||0;
-  if(!n||!c){toast('请选择食物并填写热量');return}
+  if(!n){toast('请输入食物名称');return}
+  if(!c){var split=splitComboFood(n);if(split.length>0){c=split.reduce(function(s,f){return s+f.cal},0);}else{toast('请填写热量或输入可识别的食物');return}}
   var st=ld('calorie',{profile:{},history:{}});var t=td();if(!st.history[t])st.history[t]=[];
   var amt=document.getElementById('foodAmount').value.trim()||'1份';
   st.history[t].push({name:n,cal:c,amount:amt,time:new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})});
   sv('calorie',st);document.getElementById('foodSearch').value='';document.getElementById('foodCal').value='';document.getElementById('foodAmount').value='';
-  renderCalorie(document.getElementById('contentArea'));toast('已记录');
+  document.getElementById('foodBreakdown').innerHTML='';
+  renderCalorie(document.getElementById('contentArea'));toast('已记录 · '+c+' kcal');
 }
+
 function renderFoodLogs(){
   var st=ld('calorie',{profile:{},history:{}});var t=td();var log=st.history[t]||[];
   var fl=document.getElementById('foodLogList');var cs=document.getElementById('calSummary');var ac=document.getElementById('adjustCard');
   if(!fl)return;
-  if(log.length===0){fl.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:8px">今日暂无记录</div>';ac.style.display='none';return}
+  if(log.length===0){fl.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:8px">今日暂无记录 · 左滑可删除记录</div>';cs.innerHTML='';ac.style.display='none';return}
   var total=log.reduce(function(s,f){return s+f.cal},0);
   var dailyNeed=2000;var p=st.profile;
   if(p.height&&p.weight&&p.age){var bmr=p.gender==='male'?Math.round(66.5+13.75*p.weight+5.003*p.height-6.755*p.age):Math.round(655+9.563*p.weight+1.85*p.height-4.676*p.age);dailyNeed=Math.round(bmr*1.55)}
   var pct=Math.min(100,Math.round(total/dailyNeed*100));
-  fl.innerHTML=log.map(function(f,i){return'<div class="swipe-item" data-fidx="'+i+'"><div class="swipe-item-delete" onclick="showConfirm(\'删除饮食记录\',\'确定删除 '+f.name+' 吗？\',function(){rmFood('+i+')})">删除</div><div class="swipe-item-inner"><span>'+f.time+' '+f.name+' '+f.amount+'</span><span style="color:var(--text2)">'+f.cal+' kcal</span></div></div>'}).join('');
+  fl.innerHTML=log.map(function(f,i){return'<div class="swipe-item"><div class="swipe-item-delete" onclick="rmFood('+i+')">删除</div><div class="swipe-item-inner"><div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 0"><span><span style="font-size:11px;color:var(--text2)">'+f.time+'</span> '+f.name+' <span style="font-size:11px;color:var(--text2)">'+f.amount+'</span></span><span style="color:var(--text2);font-weight:600">'+f.cal+' kcal</span></div></div></div>'}).join('');
+  bindSwipeEvents();
   cs.textContent='今日已摄入: '+total+' kcal / 日需: '+dailyNeed+' kcal ('+pct+'%)';
   if(total>dailyNeed*1.2){ac.style.display='block';document.getElementById('adjustContent').innerHTML='<p>⚠️ 今日摄入超标 '+(total-dailyNeed)+' kcal，建议明天:</p><p>1. 🏃 增加30-45分钟有氧（跑步/游泳）</p><p>2. 🥗 高蛋白+蔬菜为主，减少碳水</p><p>3. 💧 饮水2L以上，加速代谢</p><p>4. 🌙 保证7-8小时睡眠</p>'}
   else if(total<dailyNeed*0.7){ac.style.display='block';document.getElementById('adjustContent').innerHTML='<p>📉 今日摄入偏少，建议明天:</p><p>1. 🥩 增加优质蛋白（鸡胸肉/鱼/豆腐）</p><p>2. 🥑 适当增加健康脂肪（坚果/牛油果）</p><p>3. ⚠️ 避免长期低热量导致代谢下降</p>'}
