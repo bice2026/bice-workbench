@@ -74,19 +74,19 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:10px 18px;border-radius:18px;font-size:12px;font-weight:500;z-index:2000;animation:toastIn .25s ease;pointer-events:none;max-width:80vw;text-align:center}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 /* OSTA Exam styles */
-.osta-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;height:calc(100vh - 200px);min-height:400px}
+.osta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:auto;min-height:280px;max-width:360px;margin:0 auto}
 .osta-block{border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;transition:all .15s;box-shadow:var(--card-shadow);position:relative;overflow:hidden}
 .osta-block:active{transform:scale(.97)}
 .osta-start{background:linear-gradient(135deg,#007AFF,#0051d5);color:#fff;grid-row:span 2}
-.osta-start .osta-icon{font-size:56px;margin-bottom:10px}
-.osta-start .osta-label{font-size:20px;font-weight:700}
-.osta-start .osta-sub{font-size:12px;opacity:.8;margin-top:4px}
+.osta-start .osta-icon{font-size:40px;margin-bottom:6px}
+.osta-start .osta-label{font-size:16px;font-weight:700}
+.osta-start .osta-sub{font-size:10px;opacity:.8;margin-top:2px}
 .osta-wrong{background:linear-gradient(135deg,#FF9500,#FF6B00);color:#fff}
-.osta-wrong .osta-icon{font-size:36px;margin-bottom:6px}
-.osta-wrong .osta-label{font-size:15px;font-weight:600}
+.osta-wrong .osta-icon{font-size:28px;margin-bottom:4px}
+.osta-wrong .osta-label{font-size:13px;font-weight:600}
 .osta-bank{background:linear-gradient(135deg,#34C759,#28a745);color:#fff}
-.osta-bank .osta-icon{font-size:36px;margin-bottom:6px}
-.osta-bank .osta-label{font-size:15px;font-weight:600}
+.osta-bank .osta-icon{font-size:28px;margin-bottom:4px}
+.osta-bank .osta-label{font-size:13px;font-weight:600}
 .osta-badge-count{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.25);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;backdrop-filter:blur(6px)}
 .osta-question{background:var(--card-bg);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;box-shadow:var(--card-shadow)}
 .osta-q-text{font-size:15px;font-weight:600;line-height:1.6;margin-bottom:12px}
@@ -205,6 +205,10 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   .sidebar{padding-bottom:max(12px,var(--safe-bottom))}
   .content-area{padding-bottom:max(14px,var(--safe-bottom))}
 }
+.refresh-icon-btn{width:32px;height:32px;border-radius:16px;border:none;background:rgba(0,0,0,.05);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .15s;flex-shrink:0;color:var(--accent)}
+.refresh-icon-btn:active{background:rgba(0,0,0,.12);transform:scale(.92)}
+.refresh-icon-btn svg{width:16px;height:16px}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -227,7 +231,10 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">OSTA餐厅服务员考证</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin-left:4px">v8</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin-left:4px">v9</span>
+      <span style="flex:1"></span>
+      <button class="refresh-icon-btn" onclick="exportAllData()" title="导出数据备份" style="margin-right:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+      <button class="refresh-icon-btn" onclick="importAllData()" title="导入数据备份"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </header>
     <div class="content-area" id="contentArea"></div>
   </main>
@@ -254,22 +261,159 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 <input type="file" accept="image/*" id="avatarInput" class="hidden-input">
 <div id="loadingScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:3000"><div style="text-align:center"><div style="font-size:40px;margin-bottom:10px">⏳</div><div style="font-size:14px;color:#86868b">加载中...</div></div></div>
 
-<script src="osta.js?v=8"></script>
+<script src="osta.js?v=9"></script>
 <script>
-// ============ SERVICE WORKER REGISTRATION ============
+// ============ SERVICE WORKER REGISTRATION + DATA SYNC ============
+var _swReady=false;
+var _syncPending={};
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=8').catch(function(){});
+  navigator.serviceWorker.register('./sw.js?v=9').then(function(reg){
+    // Check for updates
+    reg.addEventListener('updatefound',function(){
+      var newWorker=reg.installing;
+      if(newWorker){
+        newWorker.addEventListener('statechange',function(){
+          if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
+            // New version available — notify user
+            var banner=document.createElement('div');
+            banner.id='swUpdateBanner';
+            banner.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:12px 20px;border-radius:24px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);display:flex;align-items:center;gap:10px;cursor:pointer';
+            banner.innerHTML='<span>\uD83D\uDD04 \u53D1\u73B0\u65B0\u7248\u672C</span><span style="background:#007aff;padding:4px 14px;border-radius:16px;font-size:12px">\u7ACB\u5373\u66F4\u65B0</span>';
+            banner.onclick=function(){banner.remove();newWorker.postMessage({type:'skip-waiting'});location.reload();};
+            document.body.appendChild(banner);
+            setTimeout(function(){if(banner.parentNode)banner.remove();},15000);
+          }
+        });
+      }
+    });
+    // Listen for SW messages (data sync)
+    navigator.serviceWorker.addEventListener('message',function(event){
+      if(event.data.type==='sw-updated'){
+        console.log('[SW] Version updated:',event.data.version);
+      }
+      if(event.data.type==='data-changed'){
+        console.log('[Sync] Data changed by another client at',new Date(event.data.timestamp));
+        loadSyncSnapshot();
+      }
+      if(event.data.type==='data-response'&&event.data.snapshot){
+        mergeSyncSnapshot(event.data.snapshot);
+      }
+    });
+    _swReady=true;
+    // Initial data sync — fetch any snapshot from SW
+    setTimeout(function(){
+      if(navigator.serviceWorker.controller){
+        navigator.serviceWorker.controller.postMessage({type:'fetch-data'});
+      }
+    },500);
+  }).catch(function(){});
 }
 
 // ============ STORAGE HELPERS ============
+var APP_VERSION='9';
 try{
   var _ver=localStorage.getItem('wb5_appver');
-  if(_ver!=='5'){
-    localStorage.setItem('wb5_appver','5');
+  if(_ver!==APP_VERSION){
+    localStorage.setItem('wb5_appver',APP_VERSION);
   }
 }catch(e){}
+
+// All data keys for sync
+var SYNC_KEYS=['fitness','thoughts','osta_wrong','osta_progress','diet','en_done','en_state','video_state'];
+
 function ld(k,d){try{var r=localStorage.getItem('wb5_'+k);return r?JSON.parse(r):d}catch(e){return d}}
-function sv(k,v){try{localStorage.setItem('wb5_'+k,JSON.stringify(v))}catch(e){toast('存储空间不足，请清理数据')}}
+
+function sv(k,v){
+  try{localStorage.setItem('wb5_'+k,JSON.stringify(v))}catch(e){toast('存储空间不足，请清理数据');return}
+  // Sync to SW cache for cross-client sharing
+  syncToSW();
+}
+
+// Debounced sync to SW
+var _syncTimer=null;
+function syncToSW(){
+  if(!_swReady||!navigator.serviceWorker.controller)return;
+  clearTimeout(_syncTimer);
+  _syncTimer=setTimeout(function(){
+    var snapshot={};
+    SYNC_KEYS.forEach(function(k){
+      try{var r=localStorage.getItem('wb5_'+k);if(r)snapshot[k]=JSON.parse(r)}catch(e){}
+    });
+    navigator.serviceWorker.controller.postMessage({
+      type:'sync-data',
+      source:'web',
+      payload:snapshot
+    });
+  },300);
+}
+
+// Load snapshot from SW and merge
+function loadSyncSnapshot(){
+  if(!navigator.serviceWorker.controller)return;
+  navigator.serviceWorker.controller.postMessage({type:'fetch-data'});
+}
+
+function mergeSyncSnapshot(snapshot){
+  if(!snapshot||!snapshot.payload)return;
+  var payload=snapshot.payload;
+  var merged=false;
+  SYNC_KEYS.forEach(function(k){
+    if(!payload[k])return;
+    var localStr=null;
+    try{localStr=localStorage.getItem('wb5_'+k)}catch(e){}
+    var local=localStr?JSON.parse(localStr):null;
+    // Simple merge: SW snapshot wins unless local has more entries (heuristic)
+    var shouldMerge=!local||
+      (typeof payload[k]==='object'&&payload[k]!==null&&
+       (Array.isArray(payload[k])?payload[k].length>=((Array.isArray(local)&&local.length)||0):true));
+    if(shouldMerge){
+      try{localStorage.setItem('wb5_'+k,JSON.stringify(payload[k]));merged=true}catch(e){}
+    }
+  });
+  if(merged){
+    console.log('[Sync] Merged SW snapshot data');
+    // Refresh current view if visible
+    var cur=document.querySelector('.nav-item.active');
+    if(cur)cur.click();
+  }
+}
+
+// ============ MANUAL DATA EXPORT/IMPORT ============
+function exportAllData(){
+  var data={_version:APP_VERSION,_exported:new Date().toISOString()};
+  SYNC_KEYS.forEach(function(k){
+    try{var r=localStorage.getItem('wb5_'+k);if(r)data[k]=JSON.parse(r)}catch(e){}
+  });
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='bice-workbench-backup-'+td()+'.json';
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+  toast('数据已导出');
+}
+
+function importAllData(){
+  var input=document.createElement('input');input.type='file';input.accept='.json';
+  input.onchange=function(e){
+    var file=e.target.files[0];if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        var data=JSON.parse(ev.target.result);
+        var count=0;
+        SYNC_KEYS.forEach(function(k){
+          if(data[k]!==undefined){
+            try{localStorage.setItem('wb5_'+k,JSON.stringify(data[k]));count++}catch(e){}
+          }
+        });
+        toast('已导入 '+count+' 项数据，页面即将刷新');
+        syncToSW();
+        setTimeout(function(){location.reload();},800);
+      }catch(e){toast('导入失败：文件格式错误')}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
 function td(){return new Date().toISOString().split('T')[0]}
 function fd(d){return new Date(d).toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'short'})}
 function toast(m){var e=document.createElement('div');e.className='toast';e.textContent=m;document.getElementById('toastContainer').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='opacity .3s';setTimeout(function(){e.remove()},300)},2000);}
@@ -544,7 +688,7 @@ function buildEnTextHTML(p,i){
 
 function renderEnglish(area){
   var passages=pickEnPassages();_enPassages=passages;
-  var h='<div style="font-size:14px;font-weight:600;margin-bottom:10px">🗣️ 每日英语练习 <span style="font-size:11px;color:var(--text2);font-weight:400">(30天去重 · 3篇)</span></div>';
+  var h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">🗣️ 每日英语练习 <span style="font-size:11px;color:var(--text2);font-weight:400">(30天去重 · 3篇)</span></div><button class="refresh-icon-btn" onclick="refreshEnIcon(this)" title="刷新素材"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.5 16A9 9 0 005 10.5 9 9 0 0119 13"/><path d="M23 20v-6h-6"/><path d="M20.5 8A9 9 0 0019 13.5 9 9 0 015 11"/></svg></button></div>';
   for(var i=0;i<passages.length;i++){
     var p=passages[i];var catLabel=p.cat==='news'?'<span class="tag tag-purple" style="margin-left:4px">国际新闻</span>':'<span class="tag" style="margin-left:4px">日常口语</span>';
     h+='<div class="card"><div class="card-title">'+(i+1)+'. '+p.title+catLabel+'</div><div class="en-passage" id="enText'+i+'" onclick="toggleCN('+i+')">'+buildEnTextHTML(p,i)+'</div><div class="en-passage cn-section" id="cnText'+i+'">'+p.cn+'</div>';
@@ -560,6 +704,7 @@ function renderEnglish(area){
   }
 }
 
+function refreshEnIcon(btn){if(btn){btn.style.animation='spin .6s ease';setTimeout(function(){btn.style.animation=''},600)}refreshEn();}
 function refreshEn(){var es=getEnState();es.seenIds=es.seenIds||[];var passages=pickEnPassages();_enPassages=passages;var area=document.getElementById('contentArea');var h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">\U0001f5e3\ufe0f \u6bcf\u65e5\u82f1\u8bed\u7ec3\u4e60 <span style="font-size:11px;color:var(--text2);font-weight:400">(30\u5929\u53bb\u91cd \u00b7 3\u7bc7)</span></div><button class="btn btn-outline btn-sm" onclick="refreshEn()">\U0001f504 \u5237\u65b0\u7d20\u6750</button></div>';for(var i=0;i<passages.length;i++){var p=passages[i];var catLabel=p.cat==='news'?'<span class="tag tag-purple" style="margin-left:4px">\u56fd\u9645\u65b0\u95fb</span>':'<span class="tag" style="margin-left:4px">\u65e5\u5e38\u53e3\u8bed</span>';h+='<div class="card"><div class="card-title">'+(i+1)+'. '+p.title+catLabel+'</div><div class="en-passage" id="enText'+i+'" onclick="toggleCN('+i+')">'+buildEnTextHTML(p,i)+'</div><div class="en-passage cn-section" id="cnText'+i+'">'+p.cn+'</div>';h+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><button class="btn btn-outline btn-sm" id="btnEnPlay'+i+'" onclick="toggleEnAudio('+i+')">\U0001f50a \u5168\u6587\u6717\u8bfb</button><button class="btn btn-accent btn-sm" id="btnEnRec'+i+'" onclick="startEnRec('+i+')">\U0001f3a4\ufe0f \u8ddf\u8bfb\u6b64\u6bb5</button><span id="enRecStatus'+i+'" style="font-size:11px;color:var(--text2)"></span></div><div id="enScore'+i+'" style="margin-top:8px"></div></div>';}area.innerHTML=h;toast('\u5df2\u52a0\u8f7d\u5168\u65b03\u7bc7\u7d20\u6750');}
 function toggleCN(idx){var el=document.getElementById('cnText'+idx);if(el)el.classList.toggle('show');}
 
@@ -688,6 +833,7 @@ function renderVideos(area){
   area.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">\U0001f525 \u7206\u6b3e\u89c6\u9891</div><button class="btn btn-outline btn-sm" onclick="refreshVideos()">\U0001f504 \u5237\u65b0\u89c6\u9891</button></div><div class="tab-bar"><button class="tab-item active" onclick="switchVTab(\x27all\x27,this)">🎬 全部视频</button><button class="tab-item" onclick="switchVTab(\x27ski\x27,this)">🎿 滑雪二创</button></div><div id="videoList"></div>';
   renderVideoCards('all',dv);
 }
+function refreshVideosIcon(btn){if(btn){btn.style.animation='spin .6s ease';setTimeout(function(){btn.style.animation=''},600)}refreshVideos();}
 function refreshVideos(){var vs=getVideoState();vs.lastUpdate='';vs.dailyVideos=[];saveVideoState(vs);renderVideos(document.getElementById('contentArea'));toast('\u5df2\u52a0\u8f7d\u5168\u65b0\u89c6\u9891');}
 function switchVTab(tab,btn){
   document.querySelectorAll('#contentArea .tab-item').forEach(function(t){t.classList.remove('active')});
@@ -701,7 +847,7 @@ function renderVideoCards(tab,dv){
     if(tab==='ski'){
       h+='<div class="card" style="border-left:3px solid #007aff"><div class="card-title">🎿 '+v.emoji+' 基于「'+v.title+'」的二创方案</div><div style="font-size:13px;line-height:1.7;color:var(--text2);margin-top:6px">'+v.adaptation+'</div></div>';
     }else{
-      h+='<div class="video-card"><div class="video-player-inline"><iframe src="'+v.embedUrl+'" style="width:100%;height:200px;border:none" allow="autoplay;encrypted-media" allowfullscreen loading="lazy"></iframe></div><div class="video-info"><h4>'+v.title+'</h4><div class="video-stat">'+v.platform+' · '+v.author+' · 👁 '+v.views+' · ❤ '+v.likes+'</div><div style="font-size:12px;line-height:1.5;color:var(--text2);margin-top:4px">💡 '+v.analysis+'</div></div></div>';
+      h+='<div class="video-card"><div class="video-player-inline"><iframe src="'+v.embedUrl+'" style="width:100%;height:200px;border:none" allow="autoplay;encrypted-media" allowfullscreen loading="lazy"></iframe></div><div class="video-info"><h4>'+v.title+'</h4><div class="video-stat">'+v.platform+' · '+v.author+' · 👁 '+v.views+' · ❤ '+v.likes+'</div></div></div>';
     }
   });
   el.innerHTML=h;
@@ -712,31 +858,45 @@ var _swipeItem=null,_swipeOpen=null;
 
 function renderFitness(area){
   var st=ld('fitness',{exercises:[],custom:[]});var t=td();var log=st.exercises.filter(function(e){return e.date===t});
-  area.innerHTML='<div class="card"><div class="card-title">💪 今日运动记录 <span style="font-size:11px;color:var(--text2);font-weight:400">← 左滑删除</span></div>'+
-    (log.length>0?'<div style="background:rgba(52,199,89,.08);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px"><span style="font-size:13px;color:var(--success);font-weight:600">✅ 已打卡 · 共 '+log.reduce(function(s,e){return s+e.duration},0)+'分钟</span></div>':'')+
-    '<div id="todayExList">'+renderExList(log)+'</div>'+
-    '<div style="display:flex;gap:8px;margin-top:10px"><input class="input" placeholder="运动名称" id="exName" style="flex:1"><input class="input" placeholder="分钟" id="exDuration" style="width:70px;text-align:center" type="number" value="15"></div>'+
-    '<button class="btn btn-primary btn-block" style="margin-top:8px" onclick="logEx()">➕ 添加运动</button></div>'+
-    '<div class="card"><div class="card-title">📤 上传跟练动作</div>'+
-    '<input class="input" placeholder="动作名称（必填）" id="customExName" style="margin-bottom:8px"><br>'+
-    '<textarea class="input textarea" placeholder="动作描述/要点（选填）" id="customExDesc" style="min-height:60px;margin-bottom:8px"></textarea><br>'+
-    '<div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-outline" onclick="uploadExPhoto()">📸 拍摄</button><button class="btn btn-outline" onclick="selectExPhoto()">🖼️ 选照片</button></div>'+
-    '<img id="exPhotoPreview" class="upload-preview" style="display:none">'+
-    '<button class="btn btn-primary btn-block" onclick="saveEx()">💾 保存动作</button></div>'+
-    '<div style="margin-top:12px" id="customExList">'+renderCustomExList(st.custom)+'</div>';
-  // Bind swipe events
-  bindSwipeEvents();
+  area.innerHTML='<div class="tab-bar" style="margin-bottom:12px"><button class="tab-item active" onclick="switchFTab('today',this)">💪 今日运动记录</button><button class="tab-item" onclick="switchFTab('uploaded',this)">📤 已上传跟练动作</button></div><div id="fitnessContent"></div>';
+  renderFTabContent('today',log,st);
+  window._fitnessLog=log;window._fitnessSt=st;
+}
+function switchFTab(tab,btn){
+  document.querySelectorAll('#contentArea .tab-item').forEach(function(t){t.classList.remove('active')});
+  btn.classList.add('active');
+  var log=window._fitnessLog;var st=window._fitnessSt;
+  renderFTabContent(tab,log||[],st||ld('fitness',{exercises:[],custom:[]}));
+}
+function renderFTabContent(tab,log,st){
+  var el=document.getElementById('fitnessContent');if(!el)return;
+  if(tab==='today'){
+    el.innerHTML='<div class="card"><div class="card-title">💪 今日运动记录 <span style="font-size:11px;color:var(--text2);font-weight:400">← 左滑删除</span></div>'+
+      (log.length>0?'<div style="background:rgba(52,199,89,.08);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px"><span style="font-size:13px;color:var(--success);font-weight:600">✅ 已打卡 · 共 '+log.reduce(function(s,e){return s+e.duration},0)+'分钟</span></div>':'')+
+      '<div id="todayExList">'+renderExList(log)+'</div>'+
+      '<div style="display:flex;gap:8px;margin-top:10px"><input class="input" placeholder="运动名称" id="exName" style="flex:1"><input class="input" placeholder="分钟" id="exDuration" style="width:70px;text-align:center" type="number" value="15"></div>'+
+      '<button class="btn btn-primary btn-block" style="margin-top:8px" onclick="logEx()">➕ 添加运动</button></div>';
+    bindSwipeEvents();
+  }else{
+    el.innerHTML='<div class="card"><div class="card-title">📤 上传跟练动作</div>'+
+      '<input class="input" placeholder="动作名称（必填）" id="customExName" style="margin-bottom:8px"><br>'+
+      '<textarea class="input textarea" placeholder="动作描述/要点（选填）" id="customExDesc" style="min-height:60px;margin-bottom:8px"></textarea><br>'+
+      '<div style="display:flex;gap:8px;margin-bottom:8px"><button class="btn btn-outline" onclick="uploadExPhoto()">📸 拍摄</button><button class="btn btn-outline" onclick="selectExPhoto()">🖼️ 选照片</button></div>'+
+      '<img id="exPhotoPreview" class="upload-preview" style="display:none">'+
+      '<button class="btn btn-primary btn-block" onclick="saveEx()">💾 保存动作</button></div>'+
+      '<div style="margin-top:12px" id="customExList">'+renderCustomExList2(st.custom)+'</div>';
+  }
 }
 function renderExList(log){
   if(log.length===0)return'<div style="font-size:12px;color:var(--text2);text-align:center;padding:8px">暂无今日运动记录</div>';
   return log.map(function(e,i){return'<div class="swipe-item" data-exidx="'+i+'"><div class="swipe-item-delete" onclick="rmEx('+i+')">删除</div><div class="swipe-item-inner"><div style="display:flex;align-items:center;gap:8px;width:100%"><span style="font-size:16px">🏃</span><span style="flex:1">'+e.name+'</span><span style="color:var(--text2);font-size:12px">'+e.duration+'分钟</span></div></div></div>'}).join('');
 }
-function renderCustomExList(cl){
+function renderCustomExList2(cl){
   if(!cl||cl.length===0)return'<div class="empty-state"><div class="empty-icon">📷</div><p>还没有上传跟练动作</p><p style="font-size:11px">拍照上传你的训练动作吧</p></div>';
-  return '<h3 style="font-size:14px;font-weight:600;margin-bottom:8px">📋 已上传跟练动作</h3>'+cl.map(function(e,i){
-    var img=e.photo?'<img src="'+e.photo+'" style="width:100%;border-radius:var(--radius) var(--radius) 0 0;max-height:200px;object-fit:cover" onclick="previewImg(\x27'+e.photo+'\x27)" loading="lazy">':'<div style="width:100%;height:140px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:48px;border-radius:var(--radius) var(--radius) 0 0">🏋️</div>';
-    return'<div class="custom-ex-card">'+img+'<div class="ex-body"><div style="display:flex;align-items:center;justify-content:space-between"><div class="ex-title">'+e.name+'</div><button class="btn btn-sm" style="background:rgba(255,59,48,.1);color:var(--danger);border:none;padding:4px 12px;border-radius:12px" onclick="rmCEx('+i+')">删除</button></div><div class="ex-desc">'+(e.desc||'')+'</div><div class="ex-date">'+fd(e.date)+' 上传</div></div></div>';
-  }).join('');
+  return '<div class="grid-2">'+cl.map(function(e,i){
+    var img=e.photo?'<img src="'+e.photo+'" style="width:100%;border-radius:var(--radius) var(--radius) 0 0;height:120px;object-fit:cover" onclick="previewImg(\x27'+e.photo+'\x27)" loading="lazy">':'<div style="width:100%;height:120px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:36px;border-radius:var(--radius) var(--radius) 0 0">🏋️</div>';
+    return'<div class="custom-ex-card" style="margin-bottom:0">'+img+'<div class="ex-body" style="padding:10px"><div class="ex-title" style="font-size:13px">'+e.name+'</div><div class="ex-desc" style="font-size:10px">'+(e.desc||'')+'</div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px"><span class="ex-date" style="font-size:9px">'+fd(e.date)+'</span><button class="btn btn-sm" style="background:rgba(255,59,48,.1);color:var(--danger);border:none;padding:2px 8px;border-radius:10px;font-size:10px" onclick="rmCEx('+i+')">删除</button></div></div></div>';
+  }).join('')+'</div>';
 }
 function bindSwipeEvents(){
   var items=document.querySelectorAll('.swipe-item');
@@ -916,7 +1076,88 @@ const FOOD_DB = [
 // Condiments & oils
 {name:'芝麻酱',cal:618,unit:'100g'},{name:'花生酱',cal:594,unit:'100g'},{name:'豆瓣酱',cal:178,unit:'100g'},
 {name:'老干妈',cal:758,unit:'100g'},{name:'番茄酱',cal:83,unit:'100g'},{name:'沙拉酱',cal:724,unit:'100g'},
-{name:'蜂蜜',cal:321,unit:'100g'},{name:'白糖',cal:400,unit:'100g'},{name:'食用油',cal:899,unit:'100g'}
+{name:'蜂蜜',cal:321,unit:'100g'},{name:'白糖',cal:400,unit:'100g'},{name:'食用油',cal:899,unit:'100g'},,
+// v9 expanded: home dishes
+{name:'西葫芦炒鸡蛋',cal:82,unit:'100g'},{name:'黄瓜凉面',cal:125,unit:'一份(约350g)'},{name:'蒜蓉空心菜',cal:32,unit:'100g'},
+{name:'肉末茄子',cal:98,unit:'100g'},{name:'西红柿炖牛腩',cal:108,unit:'100g'},{name:'豆角焖面',cal:168,unit:'100g'},
+{name:'青椒肉丝',cal:115,unit:'100g'},{name:'芹菜炒肉',cal:105,unit:'100g'},{name:'韭菜炒豆芽',cal:42,unit:'100g'},
+{name:'蒜薹炒肉',cal:128,unit:'100g'},{name:'红烧茄子',cal:72,unit:'100g'},{name:'炒合菜',cal:65,unit:'100g'},
+{name:'尖椒土豆丝',cal:82,unit:'100g'},{name:'家常炒饼',cal:175,unit:'100g'},{name:'蛋炒饼',cal:168,unit:'100g'},
+{name:'炸酱面',cal:163,unit:'一碗(约450g)'},{name:'西红柿鸡蛋面',cal:110,unit:'一碗(约450g)'},
+{name:'麻辣拌',cal:185,unit:'一份(约300g)'},{name:'烤冷面',cal:220,unit:'一份'},{name:'煎饼果子',cal:350,unit:'一个'},
+{name:'肉夹馍',cal:228,unit:'一个'},{name:'凉拌黄瓜',cal:28,unit:'100g'},{name:'凉拌西红柿',cal:42,unit:'100g'},
+{name:'拍黄瓜',cal:25,unit:'100g'},{name:'老虎菜',cal:38,unit:'100g'},{name:'皮蛋豆腐',cal:72,unit:'100g'},
+{name:'凉拌木耳',cal:45,unit:'100g'},{name:'菠萝咕咾肉',cal:185,unit:'100g'},{name:'京酱肉丝',cal:178,unit:'100g'},
+{name:'孜然羊肉',cal:182,unit:'100g'},{name:'干锅花菜',cal:85,unit:'100g'},{name:'干锅土豆片',cal:110,unit:'100g'},
+{name:'干煸四季豆',cal:95,unit:'100g'},{name:'虎皮青椒',cal:45,unit:'100g'},{name:'可乐鸡翅',cal:178,unit:'100g'},
+{name:'啤酒鸭',cal:168,unit:'100g'},{name:'剁椒鱼头',cal:82,unit:'100g'},{name:'毛血旺',cal:128,unit:'100g'},
+{name:'回锅肉',cal:262,unit:'100g'},{name:'蚂蚁上树',cal:165,unit:'100g'},{name:'鱼香茄子',cal:82,unit:'100g'},
+{name:'宫保虾球',cal:142,unit:'100g'},{name:'西湖醋鱼',cal:72,unit:'100g'},{name:'东坡肉',cal:325,unit:'100g'},
+{name:'梅菜扣肉',cal:342,unit:'100g'},{name:'粉蒸肉',cal:268,unit:'100g'},{name:'红烧狮子头',cal:198,unit:'100g'},
+{name:'糖醋排骨',cal:285,unit:'100g'},{name:'葱油鸡',cal:168,unit:'100g'},{name:'白切鸡',cal:145,unit:'100g'},
+{name:'盐焗鸡',cal:172,unit:'100g'},{name:'清炒虾仁',cal:62,unit:'100g'},{name:'油焖大虾',cal:142,unit:'100g'},
+{name:'葱姜炒蟹',cal:118,unit:'100g'},{name:'蛤蜊蒸蛋',cal:52,unit:'100g'},{name:'韭菜炒蛤蜊',cal:58,unit:'100g'},
+{name:'排骨炖豆角',cal:132,unit:'100g'},{name:'海带排骨汤',cal:68,unit:'100g'},{name:'玉米排骨汤',cal:78,unit:'100g'},
+{name:'山药排骨汤',cal:72,unit:'100g'},{name:'虫草花鸡汤',cal:65,unit:'100g'},{name:'乌鸡汤',cal:72,unit:'100g'},
+// v9 expanded: snacks
+{name:'薯片',cal:532,unit:'100g'},{name:'魔芋爽',cal:84,unit:'100g'},{name:'辣条',cal:435,unit:'100g'},
+{name:'锅巴',cal:498,unit:'100g'},{name:'虾条',cal:510,unit:'100g'},{name:'旺旺仙贝',cal:485,unit:'100g'},
+{name:'旺旺雪饼',cal:478,unit:'100g'},{name:'上好佳鲜虾片',cal:502,unit:'100g'},{name:'乐事薯片',cal:542,unit:'100g(约一包142g=770kcal)'},
+{name:'奥利奥',cal:486,unit:'100g'},{name:'趣多多',cal:492,unit:'100g'},{name:'好丽友派',cal:425,unit:'100g'},
+{name:'达利园蛋黄派',cal:418,unit:'100g'},{name:'沙琪玛',cal:506,unit:'100g'},{name:'桃酥',cal:483,unit:'100g'},
+{name:'老婆饼',cal:385,unit:'100g'},{name:'蛋黄酥',cal:388,unit:'100g'},{name:'凤梨酥',cal:425,unit:'100g'},
+{name:'牛轧糖',cal:435,unit:'100g'},{name:'大白兔奶糖',cal:408,unit:'100g'},{name:'德芙巧克力',cal:534,unit:'100g'},
+{name:'费列罗',cal:582,unit:'100g'},{name:'士力架',cal:482,unit:'100g(一条51g=246kcal)'},
+{name:'百奇饼干棒',cal:495,unit:'100g'},{name:'百力滋',cal:482,unit:'100g'},{name:'格力高',cal:490,unit:'100g'},
+{name:'咪咪虾条',cal:525,unit:'100g'},{name:'亲亲虾条',cal:512,unit:'100g'},{name:'上好佳洋葱圈',cal:518,unit:'100g'},
+{name:'瓜子(葵花籽)',cal:582,unit:'100g'},{name:'南瓜子',cal:574,unit:'100g'},{name:'西瓜子',cal:556,unit:'100g'},
+{name:'夏威夷果',cal:718,unit:'100g'},{name:'碧根果',cal:691,unit:'100g'},{name:'巴旦木',cal:578,unit:'100g'},
+{name:'葡萄干',cal:344,unit:'100g'},{name:'红枣',cal:276,unit:'100g'},{name:'枸杞',cal:349,unit:'100g'},
+{name:'桂圆干',cal:319,unit:'100g'},{name:'芒果干',cal:348,unit:'100g'},{name:'香蕉片',cal:519,unit:'100g'},
+{name:'山楂片',cal:372,unit:'100g'},{name:'果丹皮',cal:321,unit:'100g'},{name:'话梅',cal:168,unit:'100g'},
+{name:'溜溜梅',cal:278,unit:'100g'},{name:'牛肉干',cal:318,unit:'100g'},{name:'猪肉脯',cal:378,unit:'100g'},
+{name:'鱿鱼丝',cal:298,unit:'100g'},{name:'鱼片干',cal:285,unit:'100g'},{name:'泡椒凤爪',cal:156,unit:'100g'},
+{name:'卤鸡爪',cal:215,unit:'100g'},{name:'卤鸭脖',cal:178,unit:'100g'},{name:'鸭锁骨',cal:168,unit:'100g'},
+{name:'鸭舌',cal:202,unit:'100g'},{name:'周黑鸭鸭脖',cal:185,unit:'100g'},{name:'绝味鸭脖',cal:192,unit:'100g'},
+// v9 expanded: beverages
+{name:'雪碧',cal:49,unit:'100ml'},{name:'芬达',cal:48,unit:'100ml'},{name:'美年达',cal:48,unit:'100ml'},
+{name:'红牛',cal:45,unit:'100ml'},{name:'脉动',cal:21,unit:'100ml'},{name:'尖叫',cal:24,unit:'100ml'},
+{name:'宝矿力水特',cal:26,unit:'100ml'},{name:'农夫山泉维他命水',cal:18,unit:'100ml'},
+{name:'元气森林',cal:0,unit:'100ml(0糖)'},{name:'零度可乐',cal:0,unit:'100ml'},{name:'东方树叶',cal:0,unit:'100ml'},
+{name:'三得利乌龙茶',cal:0,unit:'100ml'},{name:'茶兀',cal:28,unit:'100ml'},{name:'阿萨姆奶茶',cal:58,unit:'100ml'},
+{name:'营养快线',cal:52,unit:'100ml'},{name:'AD钙奶',cal:38,unit:'100ml'},{name:'养乐多',cal:68,unit:'100ml'},
+{name:'优酸乳',cal:42,unit:'100ml'},{name:'真果粒',cal:45,unit:'100ml'},{name:'纯甄',cal:65,unit:'100ml'},
+{name:'安慕希',cal:78,unit:'100ml'},{name:'莫斯利安',cal:75,unit:'100ml'},{name:'燕麦奶',cal:45,unit:'100ml'},
+{name:'椰子水',cal:18,unit:'100ml'},{name:'王老吉',cal:32,unit:'100ml'},{name:'加多宝',cal:32,unit:'100ml'},
+// v9 expanded: ice cream & desserts
+{name:'可爱多',cal:178,unit:'一支(67g)'},{name:'梦龙',cal:232,unit:'一支(64g)'},{name:'巧乐兹',cal:195,unit:'一支(75g)'},
+{name:'绿色心情',cal:82,unit:'一支(70g)'},{name:'老冰棍',cal:45,unit:'一支(70g)'},{name:'东北大板',cal:168,unit:'一支(75g)'},
+{name:'八喜冰淇淋',cal:198,unit:'100g'},{name:'哈根达斯',cal:268,unit:'100g'},{name:'DQ暴风雪',cal:225,unit:'中杯'},
+{name:'双皮奶',cal:112,unit:'一碗(约200g)'},{name:'杨枝甘露',cal:152,unit:'一碗(约300g)'},{name:'烧仙草',cal:145,unit:'一碗(约350g)'},
+{name:'芋圆',cal:158,unit:'一碗(约250g)'},{name:'冰粉',cal:32,unit:'一碗(约300g)'},{name:'凉虾',cal:28,unit:'一碗(约300g)'},
+{name:'龟苓膏',cal:55,unit:'一碗(约250g)'},{name:'布丁',cal:125,unit:'100g'},{name:'慕斯蛋糕',cal:325,unit:'100g'},
+{name:'提拉米苏',cal:342,unit:'100g'},{name:'芝士蛋糕',cal:358,unit:'100g'},
+// v9 expanded: street food
+{name:'烤串(羊肉)',cal:218,unit:'一串(约50g)'},{name:'烤面筋',cal:142,unit:'一串'},{name:'烤鱿鱼',cal:95,unit:'一串(约80g)'},
+{name:'烤鸡翅',cal:158,unit:'一串(两个)'},{name:'烤肠',cal:125,unit:'一根'},{name:'烤玉米',cal:168,unit:'一根'},
+{name:'炸鸡排',cal:285,unit:'一块(约150g)'},{name:'炸鸡柳',cal:272,unit:'一份(约150g)'},{name:'炸薯条',cal:312,unit:'中份'},
+{name:'炸年糕',cal:245,unit:'一份(约150g)'},{name:'鸡米花',cal:268,unit:'一份(约120g)'},{name:'上校鸡块',cal:252,unit:'一份(5块)'},
+{name:'章鱼小丸子',cal:168,unit:'一份(6个)'},{name:'鸡蛋仔',cal:285,unit:'一份'},{name:'华夫饼',cal:291,unit:'100g'},
+{name:'手抓饼',cal:345,unit:'一个'},{name:'杂粮煎饼',cal:285,unit:'一个'},{name:'烤红薯',cal:98,unit:'一个(约200g)'},
+{name:'糖炒栗子',cal:212,unit:'100g'},{name:'爆米花',cal:387,unit:'100g'},{name:'棉花糖',cal:385,unit:'100g'},
+// v9 expanded: convenience store foods
+{name:'饭团(金枪鱼)',cal:185,unit:'一个'},{name:'三明治',cal:248,unit:'一个'},{name:'寿司拼盘',cal:325,unit:'一盒(约200g)'},
+{name:'关东煮(综合)',cal:95,unit:'一份(约300g)'},{name:'茶叶蛋',cal:68,unit:'一个'},{name:'玉米热狗',cal:185,unit:'一根'},
+{name:'包子(肉)',cal:128,unit:'一个(约80g)'},{name:'包子(菜)',cal:85,unit:'一个(约80g)'},{name:'豆沙包',cal:175,unit:'一个(约100g)'},
+{name:'奶黄包',cal:168,unit:'一个(约60g)'},{name:'叉烧包',cal:152,unit:'一个(约70g)'},{name:'小笼包',cal:215,unit:'一笼(6个)'},
+{name:'煎饺',cal:252,unit:'一份(6个)'},{name:'锅贴',cal:245,unit:'一份(6个)'},{name:'生煎包',cal:278,unit:'一份(4个)'},
+// v9 expanded: mixed combos
+{name:'黄焖鸡米饭',cal:520,unit:'一份(约400g米饭+菜)'},{name:'咖喱鸡肉饭',cal:485,unit:'一份(约400g)'},
+{name:'卤肉饭',cal:620,unit:'一份(约400g)'},{name:'鸡腿饭',cal:550,unit:'一份'},{name:'排骨饭',cal:580,unit:'一份'},
+{name:'麻辣香锅',cal:195,unit:'100g'},{name:'麻辣拌',cal:185,unit:'一份(约300g)'},{name:'麻辣烫(清汤)',cal:165,unit:'一份(约500g)'},
+{name:'麻辣烫(骨汤)',cal:245,unit:'一份(约500g)'},{name:'冒菜',cal:220,unit:'一份(约500g)'},{name:'钵钵鸡',cal:178,unit:'100g'},
+{name:'板面',cal:382,unit:'一碗(约500g)'},{name:'牛肉板面',cal:420,unit:'一碗(约500g)'},{name:'安徽板面',cal:395,unit:'一碗(约500g)'},
+
 ];
 
 function renderCalorie(area){
@@ -1086,13 +1327,14 @@ function renderThoughtsList(st,filterCat){
   if(filterCat&&filterCat!=='全部')notes=notes.filter(function(n){return n.category===filterCat});
   if(notes.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">💡</div><p>还没有'+(filterCat&&filterCat!=='全部'?filterCat+'分类的':'')+'笔记</p><p style="font-size:11px">记录你的灵感吧</p></div>';return}
   var allNotes=st.notes||[];
-  el.innerHTML=notes.map(function(n,i){
+  el.innerHTML='<div class="grid-2">'+notes.map(function(n,i){
     var originalIdx=allNotes.indexOf(n);
     var catTag='<span class="tag"'+(n.category==='灵感'?' style="background:rgba(175,82,222,.1);color:#af52de"':n.category==='碎碎念'?' style="background:rgba(255,45,85,.1);color:#ff2d55"':n.category==='小时刻'?' style="background:rgba(52,199,89,.1);color:#34c759"':'')+'>'+(n.category||'其他')+'</span>';
-    var imgHTML=n.photo?'<img src="'+n.photo+'" class="tc-img" onclick="previewImg(\''+n.photo+'\')" loading="lazy">':'';
+    var imgHTML=n.photo?'<img src="'+n.photo+'" class="tc-img" style="height:100px" onclick="previewImg(\''+n.photo+'\')" loading="lazy">':'';
     var aiLabel=n.ai?'<span style="font-size:9px;color:var(--accent);margin-left:4px">AI</span>':'';
-    return'<div class="thought-card">'+imgHTML+'<button class="tc-delete" onclick="rmThought('+originalIdx+')">✕</button><div class="tc-body"><div class="tc-text">'+n.text+'</div><div class="tc-meta"><span>'+new Date(n.time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span><span style="display:flex;align-items:center;gap:4px">'+catTag+aiLabel+'</span></div></div></div>';
-  }).join('');
+    var cls=n.photo?'thought-card':'thought-card text-only';
+    return'<div class="'+cls+'" style="margin-bottom:0">'+imgHTML+'<button class="tc-delete" onclick="rmThought('+originalIdx+')">✕</button><div class="tc-body" style="padding:10px"><div class="tc-text" style="font-size:13px">'+n.text+'</div><div class="tc-meta"><span style="font-size:9px">'+new Date(n.time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span><span style="display:flex;align-items:center;gap:4px">'+catTag+aiLabel+'</span></div></div></div>';
+  }).join('')+'</div>';
 }
 function rmThought(i){showConfirm('删除笔记','确定要删除这条笔记吗？',function(){var st=ld('thoughts',{notes:[]});if(i>=0&&i<st.notes.length)st.notes.splice(i,1);sv('thoughts',st);renderThoughts(document.getElementById('contentArea'));toast('已删除')})}
 
