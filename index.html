@@ -249,7 +249,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">OSTA餐厅服务员考证</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v11</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v12</span>
       <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
       <span style="flex:1"></span>
       <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
@@ -280,6 +280,16 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 <input type="file" accept="image/*" id="thoughtPhotoInput" class="hidden-input">
 <input type="file" accept="image/*" id="avatarInput" class="hidden-input">
 <div id="loadingScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;display:flex;align-items:center;justify-content:center;z-index:3000"><div style="text-align:center"><div style="font-size:40px;margin-bottom:10px">⏳</div><div style="font-size:14px;color:#86868b">加载中...</div></div></div>
+<script>
+// ===== FAILSAFE: MUST execute even if ALL other JS fails =====
+// Hide loading screen after 5s NO MATTER WHAT
+setTimeout(function(){
+  var ls=document.getElementById('loadingScreen');
+  if(ls){ls.style.opacity='0';ls.style.transition='opacity .3s';setTimeout(function(){if(ls.parentNode)ls.remove()},350)}
+},5000);
+// If other scripts loaded, cancel this failsafe
+window._failsafeClear=function(){var ls=document.getElementById('loadingScreen');if(ls)ls.remove()};
+</script>
 
 <!-- Cloud Sync Settings Panel -->
 <div id="syncSettingsOverlay" class="sync-settings-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
@@ -308,7 +318,16 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   </div>
 </div>
 
-<script src="osta.js?v=11"></script>
+<script>
+// Dynamic osta.js loading — won't block page if 404/cached
+(function(){
+  var s=document.createElement('script');
+  s.src='osta.js?v=12';
+  s.onerror=function(){console.warn('[Init] osta.js failed to load, using fallback');window._ostaLoaded=false;};
+  s.onload=function(){window._ostaLoaded=true;};
+  document.head.appendChild(s);
+})();
+</script>
 <script>
 // ============ GITHUB GIST CLOUD SYNC LAYER ============
 // iOS Safari and PWA home screen have COMPLETELY SEPARATE localStorage/SW instances.
@@ -344,7 +363,7 @@ var GistSync = {
         public: false,
         files: {
           'workbench-data.json': {
-            content: JSON.stringify({_app:'bice-workbench',_version:'11',_created:new Date().toISOString()})
+            content: JSON.stringify({_app:'bice-workbench',_version:'12',_created:new Date().toISOString()})
           }
         }
       })
@@ -529,7 +548,7 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '11';
+var APP_VERSION = '12';
 var SYNC_KEYS = ['fitness','thoughts','osta_wrong','osta_progress','diet','en_done','en_state','video_state'];
 
 // Version migration: if old version, clear cache on next SW update
@@ -627,10 +646,10 @@ function forceCloudPush() {
   }, 2000);
 }
 
-// ============ SERVICE WORKER REGISTRATION v11 ============
+// ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=11').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=12').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
@@ -839,10 +858,13 @@ function saveOstaState(s){sv('osta',s)}
 
 function renderOsta(area){
   var st=getOstaState();var wrongCount=st.wrongQuestions.length;
+  var sc=0,jc=0;
+  try{sc=OSTA_SINGLE.length}catch(e){}
+  try{jc=OSTA_JUDGE.length}catch(e){}
   area.innerHTML='<div class="osta-grid" style="margin-top:6px">'+
     '<div class="osta-block osta-start" onclick="startExam()"><div class="osta-icon">📝</div><div class="osta-label">开始考试</div><div class="osta-sub">随机组卷 100题</div></div>'+
     '<div class="osta-block osta-wrong" onclick="showWrongQuestions()"><div class="osta-icon">❌</div><div class="osta-label">错题记录</div>'+(wrongCount>0?'<div class="osta-badge-count">'+wrongCount+'</div>':'')+'</div>'+
-    '<div class="osta-block osta-bank" onclick="showQuestionBank()"><div class="osta-icon">📚</div><div class="osta-label">题库资料</div><div style="font-size:10px;opacity:.8;margin-top:2px">'+OSTA_SINGLE.length+'单选 + '+OSTA_JUDGE.length+'判断</div></div>'+
+    '<div class="osta-block osta-bank" onclick="showQuestionBank()"><div class="osta-icon">📚</div><div class="osta-label">题库资料</div><div style="font-size:10px;opacity:.8;margin-top:2px">'+sc+'单选 + '+jc+'判断</div></div>'+
     '</div>'+
     (st.examHistory.length>0?'<div class="card" style="margin-top:14px"><div class="card-title">📊 最近考试记录</div>'+st.examHistory.slice(-5).reverse().map(function(h){return'<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.04)"><span>'+h.date+'</span><span style="color:'+(h.score>=60?'var(--success)':'var(--danger)')+';font-weight:600">'+h.score+'分</span><span style="color:var(--text2)">'+h.correct+'/'+h.total+'题</span></div>'}).join('')+'</div>':'');
 }
@@ -850,11 +872,13 @@ function renderOsta(area){
 var _exam={questions:[],answers:{},currentIdx:0,startTime:0};
 
 function startExam(){
-  var singles=OSTA_SINGLE.slice().sort(function(){return Math.random()-.5}).slice(0,80);
-  var judges=OSTA_JUDGE.slice().sort(function(){return Math.random()-.5}).slice(0,20);
-  _exam.questions=singles.concat(judges);
-  _exam.answers={};_exam.currentIdx=0;_exam.startTime=Date.now();
-  renderExamQuestion();
+  try {
+    var singles=(OSTA_SINGLE||[]).slice().sort(function(){return Math.random()-.5}).slice(0,80);
+    var judges=(OSTA_JUDGE||[]).slice().sort(function(){return Math.random()-.5}).slice(0,20);
+    _exam.questions=singles.concat(judges);
+    _exam.answers={};_exam.currentIdx=0;_exam.startTime=Date.now();
+    renderExamQuestion();
+  } catch(e) { toast('题库加载失败，请刷新页面'); }
 }
 
 function renderExamQuestion(){
@@ -941,9 +965,10 @@ function clearWrongQuestions(){showConfirm('清空错题','确定清空所有错
 
 function showQuestionBank(){
   var area=document.getElementById('contentArea');
-  var allQs=OSTA_SINGLE.concat(OSTA_JUDGE);
-  area.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button><span style="flex:1;font-size:14px;font-weight:600">📚 题库资料 ('+allQs.length+'题)</span></div>';
-  allQs.forEach(function(q,i){
+  try {
+    var allQs=(OSTA_SINGLE||[]).concat(OSTA_JUDGE||[]);
+    area.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button><span style="flex:1;font-size:14px;font-weight:600">📚 题库资料 ('+allQs.length+'题)</span></div>';
+    allQs.forEach(function(q,i){
     var isJudge=q.c===true||q.c===false;
     var correctAns=void 0;
     if(isJudge){correctAns=q.c?'正确':'错误'}else{correctAns=q.a[q.c]}
@@ -957,6 +982,7 @@ function showQuestionBank(){
     div.innerHTML+='<div style="margin-top:6px;font-size:11px;color:var(--text2)">正确答案：'+correctAns+'</div>';
     area.appendChild(div);
   });
+  } catch(e) { area.innerHTML='<div style="padding:30px;text-align:center;color:#ff3b30">题库数据加载失败，请刷新页面</div>'; }
 }
 
 
@@ -1738,54 +1764,58 @@ document.addEventListener('click',function(e){
 });
 
 // ============ INIT ============
-// Loading timeout: force reload if stuck > 8 seconds
+// Failsafe: hide loading screen NO MATTER WHAT after 6s (CSS failsafe is 5s, this is backup)
 var _loadTimeout = setTimeout(function() {
   console.warn('[Init] Loading timeout — force reloading');
+  window._failsafeClear();
   location.reload(true);
-}, 8000);
+}, 6000);
 
 function _finishInit() {
   clearTimeout(_loadTimeout);
-  var ls = document.getElementById('loadingScreen');
-  if (ls) {
-    ls.style.opacity = '0';
-    ls.style.transition = 'opacity .3s';
-    setTimeout(function() { if (ls.parentNode) ls.remove(); }, 350);
-  }
+  window._failsafeClear();
 }
 
 try {
-  // Init cloud sync
-  GistSync.init();
-  if (GistSync.isReady()) {
-    updateSyncBadge('online');
-    document.getElementById('syncRefreshBtn').style.display = '';
-    // Pull latest data from cloud on startup
-    GistSync.load().then(function(cloudData) {
-      if (cloudData) {
-        loadCloudData(cloudData);
-      }
-    }).catch(function() {
-      updateSyncBadge('offline');
-    });
+  // Wait for osta.js (max 3s), then proceed regardless
+  var _ostaReady = false;
+  function _doInit() {
+    if (_ostaReady) return;
+    _ostaReady = true;
+
+    // Init cloud sync (non-blocking)
+    try { GistSync.init(); } catch(e) {}
+    if (GistSync.isReady()) {
+      try { updateSyncBadge('online'); } catch(e) {}
+      try { document.getElementById('syncRefreshBtn').style.display = ''; } catch(e) {}
+      GistSync.load().then(function(cloudData) {
+        if (cloudData) loadCloudData(cloudData);
+      }).catch(function() {
+        try { updateSyncBadge('offline'); } catch(e) {}
+      });
+    }
+
+    // Version check
+    setTimeout(function() { checkAppVersion(); }, 2000);
+
+    // Render page
+    try { switchPage('osta'); } catch(e) { console.error('switchPage error:', e); }
+
+    // Hide loading screen
+    setTimeout(_finishInit, 300);
   }
-
-  // Version check (delayed to not block initial render)
-  setTimeout(function() {
-    checkAppVersion();
-  }, 2000);
-
-  // Render page
-  switchPage('osta');
-
-  // Hide loading screen
-  setTimeout(function() { _finishInit(); }, 400);
+  // Wait up to 3s for osta.js, then init anyway
+  var _waitOsta = 0;
+  var _ostaCheck = setInterval(function() {
+    _waitOsta += 100;
+    if (window._ostaLoaded || _waitOsta >= 3000) {
+      clearInterval(_ostaCheck);
+      _doInit();
+    }
+  }, 100);
 } catch(err) {
   clearTimeout(_loadTimeout);
-  var ls = document.getElementById('loadingScreen');
-  if (ls) {
-    ls.innerHTML = '<div style="text-align:center;padding:30px"><div style="font-size:40px;margin-bottom:10px">😵</div><div style="font-size:14px;color:#ff3b30;margin-bottom:8px">页面加载出错</div><div style="font-size:12px;color:#86868b;word-break:break-all">' + (err && err.message ? err.message : '未知错误') + '</div><button style="margin-top:16px;padding:10px 24px;background:#1d1d1f;color:#fff;border:none;border-radius:18px;font-size:14px" onclick="location.reload(true)">重新加载</button></div>';
-  }
+  _finishInit();
   console.error('Init error:', err);
 }
 </script>
