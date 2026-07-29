@@ -1,69 +1,53 @@
-// Bice Workbench Service Worker v11
-const CACHE_NAME = 'bice-wb-v11';
-const SW_VERSION = '11';
-const ASSETS = [
-  './',
-  './index.html',
-  './osta.js',
-  './manifest.json',
-  './version.json',
-  './icon-192.png',
-  './icon-512.png'
-];
+// Bice Workbench Service Worker v12
+// Strategy: NO CACHING — always network-first, cache only as fallback
+// Old caches (v8-v11) deleted on activate
+const CACHE_NAME = 'bice-wb-v12';
+const SW_VERSION = '12';
 
-// ============ INSTALL: pre-cache assets, skip waiting ============
+// Skip waiting: new SW takes control immediately
 self.addEventListener('install', function(event) {
-  console.log('[SW v11] Installing...');
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll(ASSETS).catch(function(err) {
-        console.warn('[SW v11] Some assets failed to pre-cache:', err);
-      });
-    }).then(function() {
-      return self.skipWaiting();
-    })
-  );
+  console.log('[SW v12] Installing — skipWaiting enabled');
+  self.skipWaiting();
 });
 
-// ============ ACTIVATE: purge ALL old caches, claim all clients ============
+// Activate: DELETE ALL OLD CACHES unconditionally
 self.addEventListener('activate', function(event) {
-  console.log('[SW v11] Activating — removing all non-v11 caches...');
+  console.log('[SW v12] Activating — clearing all legacy caches');
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
         keys.map(function(k) {
-          console.log('[SW v11] Deleting old cache:', k);
+          console.log('[SW v12] Deleting old cache:', k);
           return caches.delete(k);
         })
       );
     }).then(function() {
+      // Take control of all clients immediately
       return self.clients.claim();
     }).then(function() {
+      // Notify all clients
       return self.clients.matchAll().then(function(clients) {
         clients.forEach(function(client) {
-          client.postMessage({ type: 'sw-updated', version: 'v11' });
+          client.postMessage({ type: 'sw-updated', version: 'v12' });
         });
       });
     })
   );
 });
 
-// ============ FETCH: network-first for ALL, cache as fallback ============
+// Runtime: network-first for everything, cache as fallback only
 self.addEventListener('fetch', function(event) {
+  // Only handle GET
   if (event.request.method !== 'GET') return;
 
-  var url = event.request.url;
+  // Skip non-HTTP(S)
+  var url = new URL(event.request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
-  // Core files NEVER served from cache — force network always
-  if (url.indexOf('sw.js') !== -1 || url.indexOf('version.json') !== -1) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // Everything else: network-first, cache fallback
   event.respondWith(
-    fetch(event.request).then(function(response) {
-      if (response.status === 200 && response.type === 'basic') {
+    fetch(event.request, { cache: 'no-store' }).then(function(response) {
+      // Cache successful responses for offline fallback
+      if (response.ok) {
         var clone = response.clone();
         caches.open(CACHE_NAME).then(function(cache) {
           cache.put(event.request, clone);
@@ -71,30 +55,13 @@ self.addEventListener('fetch', function(event) {
       }
       return response;
     }).catch(function() {
-      return caches.match(event.request);
+      // Network failed — try cache fallback
+      return caches.match(event.request).then(function(cached) {
+        return cached || new Response('Offline — please connect to the internet.', {
+          status: 503,
+          statusText: 'Service Unavailable'
+        });
+      });
     })
   );
-});
-
-// ============ MESSAGE handlers ============
-self.addEventListener('message', function(event) {
-  if (event.data && event.data.type === 'get-version') {
-    if (event.source) {
-      event.source.postMessage({ type: 'version-response', version: SW_VERSION });
-    }
-  }
-  if (event.data && event.data.type === 'skip-waiting') {
-    self.skipWaiting();
-  }
-  if (event.data && event.data.type === 'clear-all') {
-    event.waitUntil(
-      caches.keys().then(function(keys) {
-        return Promise.all(keys.map(function(k) { return caches.delete(k); }));
-      }).then(function() {
-        if (event.source) {
-          event.source.postMessage({ type: 'cleared' });
-        }
-      })
-    );
-  }
 });
