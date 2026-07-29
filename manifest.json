@@ -1,22 +1,30 @@
 {
   "name": "Bice 个人工作台",
   "short_name": "Bice工作台",
-  "description": "阅读打卡、英语口语、爆款视频、健身运动、热量计算、碎碎念",
-  "start_url": "./?v=4",
+  "description": "阅读打卡、英语口语、爆款视频、健身运动、热量计算、灵感笔记",
+  "start_url": "./?v=5&utm_source=pwa",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#1d1d1f",
+  "scope": "./",
+  "id": "bice-workbench-v5",
   "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["productivity", "education", "health"],
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "prefer_related_applications": false
 }
