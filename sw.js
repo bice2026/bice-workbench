@@ -1,8 +1,9 @@
-// Bice Workbench Service Worker v5
-const CACHE_NAME = 'bice-wb-v5';
+// Bice Workbench Service Worker v6
+const CACHE_NAME = 'bice-wb-v6';
 const ASSETS = [
   './',
   './index.html',
+  './books.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
