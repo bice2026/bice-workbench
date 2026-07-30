@@ -8,7 +8,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Bice工作台">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -30,8 +30,8 @@ body{
   -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
   user-select: none; -webkit-user-select: none; overflow: hidden; height: 100dvh;
 }
-.app{display:flex;height:100dvh}
-.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:#1d1d1f;display:flex;flex-direction:column;align-items:center;padding:max(16px,var(--safe-top)) 0 12px;z-index:100;transition:none}
+.app{display:flex;height:100dvh;padding-top:env(safe-area-inset-top)}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:#1d1d1f;display:flex;flex-direction:column;align-items:center;padding:16px 0 12px;z-index:100;transition:none}
 .sidebar-avatar{width:38px;height:38px;border-radius:var(--radius-sm);background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;margin-bottom:6px;flex-shrink:0;overflow:hidden;cursor:pointer;position:relative;transition:all .15s}
 .sidebar-avatar img{width:100%;height:100%;object-fit:cover}
 .sidebar-avatar .avatar-overlay{position:absolute;bottom:0;left:0;right:0;height:14px;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;opacity:0;transition:opacity .2s}
@@ -43,7 +43,7 @@ body{
 .nav-item:active{background:rgba(255,255,255,.15)}
 .nav-item.active{background:rgba(255,255,255,.18);color:#fff}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-.header{padding:max(14px,env(safe-area-inset-top)) 16px 10px;background:var(--bg);border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:50;min-height:52px}
+.header{padding:14px 16px 10px;background:var(--bg);border-bottom:1px solid rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:50;min-height:52px}
 .header h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
 .header-date{font-size:12px;color:var(--text2);font-weight:500}
 .content-area{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;overscroll-behavior:contain}
@@ -248,11 +248,20 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
     </div>
   </div>
 </div>
+<div class="dialog-overlay" id="contentDialog" onclick="if(event.target===this)closeContentDialog()">
+  <div class="dialog-box" style="max-width:460px;width:92vw;text-align:left">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h3 id="contentDialogTitle" style="font-size:16px;font-weight:700"></h3>
+      <button class="btn btn-outline btn-sm" onclick="closeContentDialog()">关闭</button>
+    </div>
+    <div id="contentDialogBody"></div>
+  </div>
+</div>
 <div class="img-preview-overlay" id="imgPreviewOverlay" onclick="closeImgPreview()">
   <img id="imgPreviewImg" src="" alt="preview">
 </div>
 <div id="toastContainer"></div>
-<div id="wordPopup" class="word-popup" style="display:none"></div>
+<div id="wordPopup" class="word-popup"></div>
 <noscript><div style="padding:40px;text-align:center;color:#ff3b30;font-size:16px">JavaScript未启用，请启用后刷新页面</div></noscript>
 <input type="file" accept="image/*" capture="environment" id="cameraInput" class="hidden-input">
 <input type="file" accept="image/*" id="photoInput" class="hidden-input">
@@ -521,7 +530,7 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '18';
+var APP_VERSION = '19';
 var SYNC_KEYS = ['fitness','thoughts','calorie','english','videos','avatar'];
 
 // Version migration: if old version, clear cache on next SW update
@@ -579,17 +588,19 @@ function pushToCloud() {
 function mergeCloud(cloudData) {
   if (!cloudData) return;
   var merged = 0;
+  var avatarMerged = false;
   SYNC_KEYS.forEach(function(k) {
     if (!cloudData[k]) return;
     var cloudTs = (cloudData._ts && cloudData._ts[k]) ? cloudData._ts[k] : 0;
     var localTs = getTs(k);
     if (cloudTs > localTs) {
-      try { localStorage.setItem('wb5_' + k, JSON.stringify(cloudData[k])); localStorage.setItem(tsKey(k), String(cloudTs)); merged++; } catch(e) {}
+      try { localStorage.setItem('wb5_' + k, JSON.stringify(cloudData[k])); localStorage.setItem(tsKey(k), String(cloudTs)); merged++; if (k === 'avatar') avatarMerged = true; } catch(e) {}
     } else if (cloudTs < localTs) {
       // Local is newer (e.g. just deleted) — push local up so cloud reconciles
       scheduleCloudPush();
     }
   });
+  if (avatarMerged) renderAvatar();
   if (merged > 0) {
     console.log('[Cloud] Merged ' + merged + ' keys from cloud (silent — no auto re-render)');
     updateSyncBadge('online');
@@ -648,7 +659,7 @@ function startCloudSync() {
 // ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=18').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=19').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
@@ -805,22 +816,7 @@ function importAllData() {
 function td(){return new Date().toISOString().split('T')[0]}
 function fd(d){return new Date(d).toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'short'})}
 function toast(m){var e=document.createElement('div');e.className='toast';e.textContent=m;document.getElementById('toastContainer').appendChild(e);setTimeout(function(){e.style.opacity='0';e.style.transition='opacity .3s';setTimeout(function(){e.remove()},300)},2000);}
-// ============ IMAGE COMPRESSION (fixes localStorage storage bugs) ============
-function compressImage(dataUrl,maxW,quality,callback){
-  var img=new Image();
-  img.onload=function(){
-    var canvas=document.createElement('canvas');
-    var w=img.width,h=img.height;
-    if(w>maxW){h=Math.round(h*maxW/w);w=maxW}
-    canvas.width=w;canvas.height=h;
-    var ctx=canvas.getContext('2d');
-    ctx.drawImage(img,0,0,w,h);
-    var compressed=canvas.toDataURL('image/jpeg',quality||0.7);
-    callback(compressed);
-  };
-  img.onerror=function(){callback(dataUrl)};
-  img.src=dataUrl;
-}
+// ============ IMAGE COMPRESSION (single Promise-based definition) ============
 
 
 // ============ DIALOG ============
@@ -835,23 +831,38 @@ function showConfirm(title,msg,cb){
   };
 }
 function closeDialog(){document.getElementById('confirmDialog').classList.remove('show');_dialogCb=null;}
+function showDialog(title,html,cb){
+  var ov=document.getElementById('contentDialog');if(!ov)return;
+  document.getElementById('contentDialogTitle').textContent=title;
+  document.getElementById('contentDialogBody').innerHTML=html;
+  ov.classList.add('show');
+  window._contentDialogCb=cb||null;
+}
+function closeContentDialog(){var ov=document.getElementById('contentDialog');if(ov)ov.classList.remove('show');window._contentDialogCb=null;}
 
 // ============ AVATAR ============
-(function initAvatar(){
+function renderAvatar(){
+  var img=document.getElementById('avatarImg');var ph=document.getElementById('avatarPlaceholder');
   var d=ld('avatar',null);
-  if(d){
-    document.getElementById('avatarImg').src=d;document.getElementById('avatarImg').style.display='block';
-    document.getElementById('avatarPlaceholder').style.display='none';
-  }
-})();
+  if(d&&img){img.src=d;img.style.display='block';if(ph)ph.style.display='none';}
+  else if(img){img.style.display='none';if(ph)ph.style.display='flex';}
+}
+renderAvatar();
 function compressImage(dataURL,maxKB){
+  maxKB=maxKB||200;
   return new Promise(function(resolve){
-    var img=new Image();img.onload=function(){var c=document.createElement('canvas');var q=0.8;var w=img.width,h=img.height;if(w>400){h=Math.round(h*400/w);w=400;}c.width=w;c.height=h;
-    (function tryCompress(){
-      var j=c.toDataURL('image/jpeg',q);
-      if(j.length/1024<=maxKB||q<0.2){resolve(j);return;}
-      q-=0.1;tryCompress();
-    })();};img.onerror=function(){resolve(dataURL)};img.src=dataURL;
+    var img=new Image();img.onload=function(){
+      var c=document.createElement('canvas');var w=img.width,h=img.height;var maxW=800;
+      if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+      c.width=w;c.height=h;
+      var ctx=c.getContext('2d');ctx.drawImage(img,0,0,w,h);
+      var q=0.85;
+      (function tryCompress(){
+        var j=c.toDataURL('image/jpeg',q);
+        if(j.length/1024<=maxKB||q<0.2){resolve(j);return;}
+        q-=0.1;tryCompress();
+      })();
+    };img.onerror=function(){resolve(dataURL)};img.src=dataURL;
   });
 }
 function triggerAvatarUpload(){
@@ -862,8 +873,7 @@ function triggerAvatarUpload(){
     r.onload=function(ev){
       var data=ev.target.result;
       compressImage(data,80).then(function(cdata){
-        document.getElementById('avatarImg').src=cdata;document.getElementById('avatarImg').style.display='block';
-        document.getElementById('avatarPlaceholder').style.display='none';sv('avatar',cdata);flushCloud();toast('头像已更新');
+        sv('avatar',cdata);renderAvatar();flushCloud();toast('头像已更新');
       });
     };r.readAsDataURL(f);
   };
@@ -1468,10 +1478,10 @@ function rmEx(i){
   sv('fitness',st);flushCloud();refreshFitnessTab('today');toast('已删除');
 }
 function uploadExPhoto(){
-  document.getElementById('cameraInput').click();document.getElementById('cameraInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,800,0.6,function(comp){var img=document.getElementById('exPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
+  document.getElementById('cameraInput').click();document.getElementById('cameraInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,200).then(function(comp){var img=document.getElementById('exPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
 }
 function selectExPhoto(){
-  document.getElementById('photoInput').click();document.getElementById('photoInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,800,0.6,function(comp){var img=document.getElementById('exPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
+  document.getElementById('photoInput').click();document.getElementById('photoInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,200).then(function(comp){var img=document.getElementById('exPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
 }
 function saveEx(){
   var n=document.getElementById('customExName').value.trim();
@@ -1873,7 +1883,7 @@ function filterThoughts(cat,btn){
   renderThoughtsList(st,cat);
 }
 function uploadThoughtPhoto(){
-  document.getElementById('thoughtPhotoInput').click();document.getElementById('thoughtPhotoInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,800,0.6,function(comp){var img=document.getElementById('thoughtPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
+  document.getElementById('thoughtPhotoInput').click();document.getElementById('thoughtPhotoInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,200).then(function(comp){var img=document.getElementById('thoughtPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
 }
 function saveThought(){
   var i=document.getElementById('thoughtInput');var t=i.value.trim();

@@ -2,13 +2,13 @@
   "name": "Bice 个人工作台",
   "short_name": "Bice工作台",
   "description": "英语口语、爆款视频、健身运动、热量计算、灵感笔记",
-  "start_url": "./?v=18&utm_source=pwa",
+  "start_url": "./?v=19&utm_source=pwa",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#1d1d1f",
   "scope": "./",
-  "id": "bice-workbench-v18",
+  "id": "bice-workbench-v19",
   "icons": [
     {
       "src": "icon-192.png",
