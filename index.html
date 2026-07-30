@@ -228,7 +228,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">英语口语练习</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v17</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v18</span>
       <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
       <span style="flex:1"></span>
       <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
@@ -521,7 +521,7 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '17';
+var APP_VERSION = '18';
 var SYNC_KEYS = ['fitness','thoughts','calorie','english','videos','avatar'];
 
 // Version migration: if old version, clear cache on next SW update
@@ -648,7 +648,7 @@ function startCloudSync() {
 // ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=17').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=18').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
@@ -1659,8 +1659,7 @@ const FOOD_DB = [
 {name:'蒜蓉蒸扇贝',cal:98,unit:'100g'},{name:'蒜蓉生蚝',cal:85,unit:'100g'},{name:'椒盐鱿鱼',cal:165,unit:'100g'},
 {name:'铁板豆腐',cal:135,unit:'100g'},{name:'烤茄子',cal:78,unit:'100g'},{name:'烤韭菜',cal:55,unit:'100g'},
 {name:'蒜蓉粉丝娃娃菜',cal:48,unit:'100g'},{name:'耗油丝瓜',cal:62,unit:'100g'},{name:'清炒芦笋',cal:22,unit:'100g'},
-{name:'上汤娃娃菜',cal:68,unit:'100g'},{name:'白灼秋葵',cal:32,unit:'100g'},{name:'蒜蓉空心菜',cal:32,unit:'100g'}
-];
+{name:'上汤娃娃菜',cal:68,unit:'100g'},{name:'白灼秋葵',cal:32,unit:'100g'},{name:'蒜蓉空心菜',cal:32,unit:'100g'},
 {name:'梅菜扣肉',cal:342,unit:'100g'},{name:'粉蒸肉',cal:268,unit:'100g'},{name:'红烧狮子头',cal:198,unit:'100g'},
 {name:'糖醋排骨',cal:285,unit:'100g'},{name:'葱油鸡',cal:168,unit:'100g'},{name:'白切鸡',cal:145,unit:'100g'},
 {name:'盐焗鸡',cal:172,unit:'100g'},{name:'清炒虾仁',cal:62,unit:'100g'},{name:'油焖大虾',cal:142,unit:'100g'},
