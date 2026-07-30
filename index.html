@@ -20,7 +20,7 @@
   --accent: #007aff; --danger: #ff3b30; --success: #34c759; --warning: #ff9500;
   --card-bg: #fff; --card-shadow: 0 2px 12px rgba(0,0,0,0.08);
   --radius-sm: 10px; --radius: 14px; --radius-lg: 18px;
-  --sidebar-w: 60px; --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --sidebar-w: 60px; --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
   --font-size: 16px; --line-height: 1.8;
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -31,7 +31,7 @@ body{
   user-select: none; -webkit-user-select: none; overflow: hidden; height: 100dvh;
 }
 .app{display:flex;height:100dvh}
-.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:#1d1d1f;display:flex;flex-direction:column;align-items:center;padding:16px 0 12px;z-index:100;transition:none}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:#1d1d1f;display:flex;flex-direction:column;align-items:center;padding:max(16px,var(--safe-top)) 0 12px;z-index:100;transition:none}
 .sidebar-avatar{width:38px;height:38px;border-radius:var(--radius-sm);background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;margin-bottom:6px;flex-shrink:0;overflow:hidden;cursor:pointer;position:relative;transition:all .15s}
 .sidebar-avatar img{width:100%;height:100%;object-fit:cover}
 .sidebar-avatar .avatar-overlay{position:absolute;bottom:0;left:0;right:0;height:14px;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;opacity:0;transition:opacity .2s}
@@ -81,13 +81,24 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 .en-passage.cn-section.show{display:block}
 .word-tap{cursor:pointer;border-bottom:1px dotted rgba(0,122,255,.3);transition:background .1s;padding:0 1px;position:relative}
 .word-tap:active{background:rgba(0,122,255,.15);border-radius:2px}
-.word-popup{position:fixed;background:#1d1d1f;color:#fff;padding:14px 16px;border-radius:var(--radius);font-size:13px;z-index:1100;pointer-events:none;animation:fadeIn .12s ease;max-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.25);line-height:1.5}
-.word-popup .wp-word{font-size:20px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
-.word-popup .wp-phonetic{font-size:12px;font-weight:400;opacity:.6}
-.word-popup .wp-pos{font-size:10px;background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;margin-right:4px}
-.word-popup .wp-meaning{font-size:13px;opacity:.9;margin-bottom:4px}
-.word-popup .wp-eg{font-size:11px;opacity:.6;font-style:italic;margin-top:4px}
-.word-popup .wp-loading{font-size:11px;opacity:.5}
+.word-popup{position:fixed;top:0;left:0;right:0;bottom:0;z-index:1100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.4)}
+.word-popup.show{display:flex}
+.word-popup .dict-modal{background:#fff;color:#1d1d1f;border-radius:var(--radius-lg);width:min(420px,92vw);max-height:80vh;overflow-y:auto;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:fadeIn .15s ease;line-height:1.6}
+.dict-modal .dm-close{position:absolute;top:10px;right:14px;background:none;border:none;font-size:22px;color:#999;cursor:pointer;padding:4px 8px;border-radius:50%;line-height:1}
+.dict-modal .dm-close:active{background:#eee}
+.dict-modal .dm-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.dict-modal .dm-word{font-size:24px;font-weight:700}
+.dict-modal .dm-phonetic{font-size:14px;color:#666}
+.dict-modal .dm-audio{display:inline-flex;gap:6px;margin-left:4px}
+.dict-modal .dm-audio button{background:#007aff;color:#fff;border:none;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.dict-modal .dm-audio button:active{transform:scale(.9)}
+.dict-modal .dm-section{margin-bottom:8px}
+.dict-modal .dm-pos-tag{display:inline-block;background:rgba(0,122,255,.08);color:#007aff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;margin-bottom:3px}
+.dict-modal .dm-def{font-size:14px;color:#333;margin-bottom:2px}
+.dict-modal .dm-eg{font-size:12px;color:#888;font-style:italic;padding-left:12px;border-left:2px solid #ddd;margin-top:2px}
+.dict-modal .dm-cn{color:#555;font-size:12px;margin-left:4px}
+.dict-modal .dm-loading{text-align:center;padding:40px 0;color:#999;font-size:14px}
+.dict-modal .dm-error{text-align:center;padding:24px 0;color:#ff3b30;font-size:14px}
 .audio-player{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg2);border-radius:var(--radius-sm);margin-top:10px}
 .audio-btn{width:38px;height:38px;border-radius:19px;border:none;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;background:#1d1d1f;color:#fff;transition:all .15s}
 .audio-btn:active{transform:scale(.92)}
@@ -217,7 +228,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">英语口语练习</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v16</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v17</span>
       <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
       <span style="flex:1"></span>
       <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
@@ -510,7 +521,7 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '16';
+var APP_VERSION = '17';
 var SYNC_KEYS = ['fitness','thoughts','calorie','english','videos','avatar'];
 
 // Version migration: if old version, clear cache on next SW update
@@ -637,7 +648,7 @@ function startCloudSync() {
 // ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=16').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=17').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
@@ -833,6 +844,16 @@ function closeDialog(){document.getElementById('confirmDialog').classList.remove
     document.getElementById('avatarPlaceholder').style.display='none';
   }
 })();
+function compressImage(dataURL,maxKB){
+  return new Promise(function(resolve){
+    var img=new Image();img.onload=function(){var c=document.createElement('canvas');var q=0.8;var w=img.width,h=img.height;if(w>400){h=Math.round(h*400/w);w=400;}c.width=w;c.height=h;
+    (function tryCompress(){
+      var j=c.toDataURL('image/jpeg',q);
+      if(j.length/1024<=maxKB||q<0.2){resolve(j);return;}
+      q-=0.1;tryCompress();
+    })();};img.onerror=function(){resolve(dataURL)};img.src=dataURL;
+  });
+}
 function triggerAvatarUpload(){
   document.getElementById('avatarInput').click();
   document.getElementById('avatarInput').onchange=function(e){
@@ -840,9 +861,10 @@ function triggerAvatarUpload(){
     var r=new FileReader();
     r.onload=function(ev){
       var data=ev.target.result;
-      document.getElementById('avatarImg').src=data;document.getElementById('avatarImg').style.display='block';
-      document.getElementById('avatarPlaceholder').style.display='none';sv('avatar',data);
-      toast('头像已更新');
+      compressImage(data,80).then(function(cdata){
+        document.getElementById('avatarImg').src=cdata;document.getElementById('avatarImg').style.display='block';
+        document.getElementById('avatarPlaceholder').style.display='none';sv('avatar',cdata);flushCloud();toast('头像已更新');
+      });
     };r.readAsDataURL(f);
   };
 }
@@ -958,28 +980,175 @@ function refreshEn(){var es=getEnState();es.seenIds=es.seenIds||[];var passages=
 function toggleCN(idx){var el=document.getElementById('cnText'+idx);if(el)el.classList.toggle('show');}
 
 function showWord(e,word){
-  var pop=document.getElementById('wordPopup');
-  pop.innerHTML='<div class="wp-word">'+word+'<span class="wp-phonetic">/.../</span></div><div class="wp-loading">查询中...</div>';
-  pop.style.display='block';pop.style.left=Math.min(e.clientX-120,window.innerWidth-270)+'px';pop.style.top=Math.max(10,e.clientY-80)+'px';
-  clearTimeout(pop._t);pop._t=setTimeout(function(){pop.style.display='none'},4000);
-  fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(word))
-    .then(function(r){return r.json()})
+  e.stopPropagation();
+  var w=word.replace(/[^a-zA-Z'-]/g,'').toLowerCase();if(!w)return;
+  var pop=document.getElementById('wordPopup');if(!pop)return;
+  pop.classList.add('show');
+  pop.innerHTML='<div class="dict-modal"><button class="dm-close" onclick="closeDict()">✕</button><div class="dm-loading">🔍 查询中...</div></div>';
+  document.addEventListener('keydown',_dictEsc);
+  _dictLastWord=w;
+  fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(w))
+    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
     .then(function(d){
-      if(d&&d[0]&&d[0].meanings&&d[0].meanings[0]){
-        var phonetic=d[0].phonetic||(d[0].phonetics&&d[0].phonetics[0]&&d[0].phonetics[0].text)||'';
-        var pos=d[0].meanings[0].partOfSpeech||'';
-        var defs=[];
-        for(var j=0;j<Math.min(d[0].meanings.length,2);j++){
-          var m=d[0].meanings[j];
-          for(var k=0;k<Math.min(m.definitions.length,1);k++)defs.push(m.definitions[k].definition);
-        }
-        var meaning=defs.join('; ');
-        var eg='';
-        if(d[0].meanings[0].definitions[0]&&d[0].meanings[0].definitions[0].example)eg=d[0].meanings[0].definitions[0].example;
-        pop.innerHTML='<div class="wp-word">'+word+(phonetic?' <span class="wp-phonetic">'+phonetic+'</span>':'')+'</div>'+(pos?'<div style="margin-bottom:4px"><span class="wp-pos">'+pos+'</span></div>':'')+'<div class="wp-meaning">'+meaning+'</div>'+(eg?'<div class="wp-eg">'+eg+'</div>':'');
-      }else{pop.innerHTML='<div class="wp-word">'+word+'</div><div class="wp-meaning">未找到释义</div>';}
-    }).catch(function(){pop.innerHTML='<div class="wp-word">'+word+'</div><div class="wp-meaning" style="opacity:.5">网络查询失败</div>';});
-  if('speechSynthesis' in window){window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(word);u.lang='en-US';u.rate=.7;window.speechSynthesis.speak(u);}
+      if(!d||!d[0]||!d[0].meanings)throw new Error('no data');
+      renderDictModal(d[0]);
+    })
+    .catch(function(err){
+      tryLocalDict(w);
+    });
+}
+var _dictLastWord='';
+function closeDict(){
+  var pop=document.getElementById('wordPopup');if(pop)pop.classList.remove('show');
+  document.removeEventListener('keydown',_dictEsc);
+  if('speechSynthesis' in window)window.speechSynthesis.cancel();
+}
+function _dictEsc(ev){if(ev.key==='Escape')closeDict();}
+function playDictAudio(url){
+  if(!url||!('Audio' in window))return;
+  try{var a=new Audio(url);a.play().catch(function(){});}catch(e){}
+}
+function playDictTTS(text){
+  if(!('speechSynthesis' in window)||!text)return;
+  window.speechSynthesis.cancel();
+  var u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.85;window.speechSynthesis.speak(u);
+}
+function renderDictModal(entry){
+  var pop=document.getElementById('wordPopup');if(!pop)return;
+  var word=entry.word||_dictLastWord;
+  var phons=[];var audios=[];
+  (entry.phonetics||[]).forEach(function(p){
+    if(p.text)phons.push(p.text);
+    if(p.audio){
+      audios.push({label:p.audio.indexOf('-us')>-1?'美':'英',url:p.audio});
+    }
+  });
+  if(phons.length===0)phons=[''];
+  var audioBtns='';
+  audios.forEach(function(a){
+    audioBtns+='<button onclick="playDictAudio(\''+a.url+'\')" title="'+a.label+'发音">'+a.label+'</button>';
+  });
+  if(audioBtns==='')audioBtns+='<button onclick="playDictTTS(\''+word+'\')" title="TTS朗读">🔊</button>';
+
+  var h='<button class="dm-close" onclick="closeDict()">✕</button>';
+  h+='<div class="dm-head"><span class="dm-word">'+word+'</span>';
+  h+='<span class="dm-phonetic">'+phons.join(' / ')+'</span>';
+  h+='<span class="dm-audio">'+audioBtns+'</span></div>';
+
+  var totalDefs=0;(entry.meanings||[]).forEach(function(m){totalDefs+=m.definitions?m.definitions.length:0});
+  entry.meanings.forEach(function(m,i){
+    h+='<div class="dm-section"><span class="dm-pos-tag">'+m.partOfSpeech+'</span>';
+    (m.definitions||[]).slice(0,4).forEach(function(def,j){
+      h+='<div class="dm-def">'+(j+1)+'. '+def.definition+'</div>';
+      if(def.example)h+='<div class="dm-eg">📝 '+def.example+'</div>';
+      if(def.translation)h+='<div class="dm-cn">→ '+def.translation+'</div>';
+    });
+    if(m.synonyms&&m.synonyms.length>0)h+='<div style="font-size:11px;color:#999;margin-top:2px">同义词: '+m.synonyms.slice(0,5).join(', ')+'</div>';
+    h+='</div>';
+  });
+
+  var origin=entry.origin||entry.etymology||'';
+  if(origin)h+='<div style="font-size:11px;color:#aaa;margin-top:8px;padding-top:6px;border-top:1px solid #eee">词源: '+origin+'</div>';
+
+  pop.querySelector('.dict-modal').innerHTML=h;
+}
+// Offline fallback dictionary
+var LOCAL_DICT={
+  hello:{p:'/həˈloʊ/',pos:'interj.',def:'你好；喂（打招呼）',eg:'Hello, how are you?',cn:'你好，你好吗？'},
+  world:{p:'/wɜːrld/',pos:'n.',def:'世界；地球；领域',eg:'The world is beautiful.',cn:'这个世界很美丽。'},
+  love:{p:/lʌv/,pos:'n./v.',def:'爱；热爱；喜爱',eg:'I love you.',cn:'我爱你。'},
+  happy:{p:'/"hæpi/',pos:'adj.',def:'快乐的；幸福的',eg:'She looks very happy today.',cn:'她今天看起来很开心。'},
+  good:{p:/ɡʊd/,pos:'adj.',def:'好的；优秀的；令人满意的',eg:'Good morning!',cn:'早上好！'},
+  thank:{p:/θæŋk/,pos:'v.',def:'感谢；谢谢',eg:'Thank you very much.',cn:'非常感谢你。'},
+  please:{p:/pliːz/,pos:'adv./v.',def:'请；使高兴',eg:'Please help me.',cn:'请帮帮我。'},
+  sorry:{p:/'sɑːri/,pos:'adj./interj.',def:'对不起；抱歉的',eg:"I'm so sorry.",cn:'非常抱歉。'},
+  yes:{p:/jes/,pos:'adv.',def:'是；是的；可以',eg:'Yes, I agree.',cn:'是的，我同意。'},
+  no:{p:/noʊ/,pos:'adv./n.',def:'不；没有；否定的回答',eg:'No problem.',cn:'没问题。'},
+  water:{p:/'wɔːtər/,pos:'n./v.',def:'水；浇水',eg:'Can I have some water?',cn:'能给我点水吗？'},
+  food:{p:/fuːd/,pos:'n.',def:'食物；食品',eg:'The food here is great.',cn:'这里的食物很棒。'},
+  time:{p:/taɪm/,pos:'n./v.',def:'时间；次数；计时',eg:"It's time to go.",cn:'该走了。'},
+  day:{p:/deɪ/,pos:'n.',def:'天；白天；日子',eg:'Have a nice day!',cn:'祝你今天愉快！'},
+  night:{p:/naɪt/,pos:'n.',def:'夜晚；晚上',eg:'Good night!',cn:'晚安！'},
+  morning:{p:/'mɔːrnɪŋ/,pos:'n.',def:'早晨；上午',eg:'Good morning!',cn:'早上好！'},
+  friend:{p:/frend/,pos:'n.',def:'朋友；友人',eg:'She is my best friend.',cn:'她是我最好的朋友。'},
+  family:{p:/'fæməli/,pos:'n.',def:'家庭；家人',eg:'I love my family.',cn:'我爱我的家人。'},
+  work:{p:/wɜːrk/,pos:'n./v.',def:'工作；职业；运作',eg:'I go to work at 8.',cn:'我八点去上班。'},
+  school:{p:/skuːl/,pos:'n.',def:'学校；学院',eg:'My daughter goes to school.',cn:'我女儿去上学了。'},
+  learn:{p:/lɜːrn/,pos:'v.',def:'学习；学会；得知',eg:'I want to learn English.',cn:'我想学英语。'},
+  study:{p:/'stʌdi/,pos:'n./v.',def:'学习；研究；书房',eg:'Study hard!',cn:'努力学习！'},
+  think:{p:/θɪŋk/,pos:'v.',def:'想；认为；思考',eg:'I think so too.',cn:'我也这么认为。'},
+  know:{p:/noʊ/,pos:'v.',def:'知道；认识；了解',eg:'I don\'t know.',cn:'我不知道。'},
+  want:{p:/wɑːnt/,pos:'v.',def:'想要；需要',eg:'I want some coffee.',cn:'我想要些咖啡。'},
+  need:{p:/niːd/,pos:'v./n.',def:'需要；必需品',eg:'I need your help.',cn:'我需要你的帮助。'},
+  help:{p:/help/,pos:'n./v.',def:'帮助；援助',eg:'Can you help me?',cn:'你能帮我吗？'},
+  like:{p:/laɪk/,pos:'v./prep.',def:'喜欢；像；如同',eg:'I like this song.',cn:'我喜欢这首歌。'},
+  come:{p:/kʌm/,pos:'v.',def:'来；来到；到达',eg:'Come here, please.',cn:'请过来一下。'},
+  go:{p:/goʊ/,pos:'v.',def:'走；去；离开',eg:"Let's go!",cn:'我们走吧！'},
+  see:{p:/siː/,pos:'v.',def:'看见；理解；明白',eg:'Nice to see you.',cn:'很高兴见到你。'},
+  get:{p:/ɡet/,pos:'v.',def:'得到；获得；到达',eg:'I got a new phone.',cn:'我买了部新手机。'},
+  make:{p:/meɪk/,pos:'v.',def:'做；制造；使',eg:'Let me make dinner.',cn:'让我来做晚饭吧。'},
+  take:{p:/teɪk/,pos:'v.',def:'拿；取；花费',eg:'Take your time.',cn:'慢慢来，别着急。'},
+  give:{p:/ɡɪv/,pos:'v.',def:'给；给予；提供',eg:'Give me a hand.',cn:'帮我一把。'},
+  look:{p:/lʊk/,pos:'v.',def:'看；注视；寻找',eg:'Look at that!',cn:'看那个！'},
+  talk:{p:/tɔːk/,pos:'v.',def:'说话；谈话；讨论',eg:'Let\'s talk about it.',cn:'我们来谈谈这件事。'},
+  speak:{p:/spiːk/,pos:'v.',def:'说；讲（语言）；发言',eg:'Do you speak English?',cn:'你会说英语吗？'},
+  eat:{p:/iːt/,pos:'v.',def:'吃；进食',eg:'What do you want to eat?',cn:'你想吃什么？'},
+  drink:{p:/drɪŋk/,pos:'v.',def:'喝；饮',eg:'Drink more water.',cn:'多喝水。'},
+  sleep:{p:/sliːp/,pos:'n./v.',def:'睡觉；睡眠',eg:'I sleep 7 hours a day.',cn:'我每天睡七小时。'},
+  walk:{p:/wɔːk/,pos:'v./n.',def:'走路；散步',eg:'Let\'s walk there.',cn:'我们走到那里去吧。'},
+  run:{p:/rʌn/,pos:'v.',def:'跑；奔跑；经营',eg:'I run every morning.',cn:'我每天早晨跑步。'},
+  buy:{p:/baɪ/,pos:'v.',def:'买；购买',eg:'I bought a gift.',cn:'我买了个礼物。'},
+  sell:{p:/sel/,pos:'v.',def:'卖；销售',eg:'This shop sells books.',cn:'这家店卖书。'},
+  price:{p:/praɪs/,pos:'n.',def:'价格；价钱',eg:'What\'s the price?',cn:'价格是多少？'},
+  money:{p:/'mʌni/,pos:'n.',def:'钱；货币；财富',eg:'Money can\'t buy happiness.',cn:'钱买不到幸福。'},
+  hotel:{p:/hoʊˈtel/,pos:'n.',def:'旅馆；酒店',eg:'I booked a hotel room.',cn:'我订了一间酒店房间。'},
+  airport:{p:/'er.pɔːrt/,pos:'n.',def:'机场；航空港',eg:'Where is the airport?',cn:'机场在哪里？'},
+  ticket:{p:/'tɪkɪt/,pos:'n.',def:'票；入场券',eg:'Two tickets, please.',cn:'请给我两张票。'},
+  weather:{p:/'weðər/,pos:'n.',def:'天气；气象',eg:'Nice weather today!',cn:'今天天气真好！'},
+  hot:{p:/hɑːt/,pos:'adj.',def:'热的；辣的；热门的',eg:'It\'s so hot today.',cn:'今天太热了。'},
+  cold:{p:/koʊld/,pos:'adj.',def:'冷的；寒冷的',eg:'It\'s cold outside.',cn:'外面很冷。'},
+  big:{p:/bɪɡ/,pos:'adj.',def:'大的；巨大的',eg:'This bag is too big.',cn:'这个包太大了。'},
+  small:{p:/smɔːl/,pos:'adj.',def:'小的；小型的',eg:'I need a smaller size.',cn:'我需要更小的尺寸。'},
+  new:{p:/nuː/,pos:'adj.',def:'新的；新鲜的',eg:'I bought a new car.',cn:'我买了辆新车。'},
+  old:{p:/oʊld/,pos:'adj.',def:'老的；旧的；年长的',eg:'How old are you?',cn:'你多大了？'},
+  beautiful:{p:/'bjuːtɪfl/,pos:'adj.',def:'美丽的；漂亮的',eg:'The view is beautiful.',cn:'景色很美。'},
+  interesting:{p:/'ɪntrəstɪŋ/,pos:'adj.',def:'有趣的；引人入胜的',eg:'That sounds interesting!',cn:'听起来很有趣！'},
+  important:{p:/ɪmˈpɔːrtnt/,pos:'adj.',def:'重要的；重大的',eg:'This is very important.',cn:'这非常重要。'},
+  different:{p:/'dɪfrənt/,pos:'adj.',def:'不同的；有区别的',eg:'We are different.',cn:'我们是不同的。'},
+  same:{p:/seɪm/,pos:'adj.',def:'相同的；同样的',eg:'We have the same idea.',cn:'我们有相同的想法。'},
+  easy:{p:/'iːzi/,pos:'adj.',def:'容易的；简单的',eg:'It\'s easy to use.',cn:'它很容易使用。'},
+  difficult:{p:/'dɪfɪkəlt/,pos:'adj.',def:'困难的；艰难的',eg:'English is not difficult.',cn:'英语并不难。'},
+  busy:{p:/'bɪzi/,pos:'adj.',def:'忙的；繁忙的',eg:'I\'m busy today.',cn:'我今天很忙。'},
+  free:{p:/friː/,pos:'adj.',def:'免费的；空闲的',eg:'Are you free tonight?',cn:'你今晚有空吗？'},
+  cheap:{p:/tʃiːp/,pos:'adj.',def:'便宜的；廉价的',eg:'It\'s very cheap.',cn:'这很便宜。'},
+  expensive:{p:/ɪk'spensɪv/,pos:'adj.',def:'昂贵的；花钱多的',eg:'Too expensive.',cn:'太贵了。'}
+};
+function tryLocalDict(w){
+  var lw=w.toLowerCase();
+  // Try exact match first
+  var d=LOCAL_DICT[lw];
+  if(!d){
+    // Try partial match
+    var keys=Object.keys(LOCAL_DICT);
+    for(var i=0;i<keys.length;i++){if(keys[i].indexOf(lw)>-1||lw.indexOf(keys[i])>-1){d=LOCAL_DICT[keys[i]];break;}}
+  }
+  var pop=document.getElementById('wordPopup');if(!pop)return;
+  if(d){
+    pop.querySelector('.dict-modal').innerHTML=
+      '<button class="dm-close" onclick="closeDict()">✕</button>'+
+      '<div class="dm-head"><span class="dm-word">'+w+'</span>'+
+      '<span class="dm-phonetic">'+(d.p||'')+'</span>'+
+      '<span class="dm-audio"><button onclick="playDictTTS(\''+w+'\')" title="朗读">🔊</button></span></div>'+
+      '<div class="dm-section"><span class="dm-pos-tag">'+(d.pos||'')+'</span>'+
+      '<div class="dm-def">'+d.def+'</div>'+
+      (d.eg?'<div class="dm-eg">📝 '+d.eg+'</div>':'')+
+      (d.cn?'<div class="dm-cn">→ '+d.cn+'</div>':'')+'</div>'+
+      '<div style="font-size:11px;color:#ccc;margin-top:10px;text-align:center">离线词典 · 仅展示常用词汇';
+  }else{
+    pop.querySelector('.dict-modal').innerHTML=
+      '<button class="dm-close" onclick="closeDict()">✕</button>'+
+      '<div class="dm-error">😅 未找到「'+w+'」的释义<br><span style="font-size:11px;color:#999">请检查拼写或尝试其他单词</span></div>';
+  }
 }
 
 // Per-passage audio: read full passage
@@ -1029,39 +1198,79 @@ function saveVideoState(s){sv('videos',s)}
 
 const VIDEOS = [
 {id:1,title:'凌晨4点的雪场，滑第一趟没人压过的粉雪',platform:'小红书',author:'@雪线阿杰',views:'234万',likes:'18.6万',color:'#007AFF',emoji:'🎿',
+cover:'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=640&q=70',
 analysis:'极早时间制造反差+第一视角沉浸感+日出雪道视觉冲击，真实感大于精致感，滑雪圈公认的爆款开头',
 adaptation:'【滑雪二创】时间线叙事：起床→装备检查→开车上山→第一缕阳光洒在雪道上→滑下第一趟。强调「粉雪就像刚出炉的面包，只有早起的人才能吃到」。拍摄：GoPro第一视角+无人机航拍雪道全景，配轻快BGM。'},
 {id:2,title:'单板滑雪刻滑教学：从推坡到换刃全记录',platform:'B站',author:'@滑雪教练老周',views:'567万',likes:'45.2万',color:'#00CED1',emoji:'🏂',
+cover:'https://images.unsplash.com/photo-1605540436563-5bca919ae766?w=640&q=70',
 analysis:'干货教学类天然高收藏+成长曲线清晰+评论区求教形成强互动，新手向内容完播率高',
 adaptation:'【滑雪二创】做「7天学会换刃」系列：第1天推坡→第3天落叶飘→第7天换刃。每期一个重点动作拆解+常见错误示范，结尾放本期成果。拍摄：固定机位侧面拍全身动作+关键帧慢放标注。'},
-{id:3,title:'滑雪摔倒合集，笑着滑完一整天',platform:'抖音',author:'@雪场开心果',views:'89万',likes:'7.3万',color:'#FF69B4',emoji:'⛷️',
-analysis:'翻车=天然笑点+反转结局留住观众+轻松人设易涨粉，滑雪搞笑赛道流量稳定',
-adaptation:'【滑雪二创】滑雪vlog翻车合集：各种摔跤名场面+最后来个完美刻滑反转。轻松搞笑风格剪辑，配欢快BGM。文案：「摔倒99次，第100次终于站稳了」。拍摄：头盔GoPro+雪友互拍，关键帧加慢动作和音效。'},
-{id:4,title:'新手滑雪装备开箱：5000块搞定全身',platform:'B站',author:'@装备控小马',views:'156万',likes:'12.1万',color:'#FF8C00',emoji:'🎒',
-analysis:'实用干货解决真实痛点+横向对比可视化+评论区UGC形成社区，预算类内容收藏率极高',
-adaptation:'【滑雪二创】新手滑雪装备全攻略：雪板/固定器/雪鞋/雪镜/头盔/护具。每样给3个价位选项，标注适合新手的。结尾给购物清单长截图。拍摄：俯拍桌面评测+实拍雪场穿着效果对比。'},
-{id:5,title:'雪场vlog：和雪友滑到关门才走',platform:'小红书',author:'@雪季不打烊',views:'320万',likes:'25.6万',color:'#7B68EE',emoji:'🌨️',
-analysis:'陪伴感vlog天然治愈+社交属性强+雪场氛围画面即封面素材，适合做系列连载',
-adaptation:'【滑雪二创】一天的雪场生活：早场第一趟→中午雪具厅热身→下午追粉雪→傍晚夕阳滑行。用时间轴串起，配舒缓音乐。文案：「雪场的快乐，是滑到腿软才懂的」。拍摄：手机手持跟拍+无人机雪道大景。'},
-{id:6,title:'滑雪体能训练：在家练核心和腿力',platform:'抖音',author:'@健身教练大刘',views:'450万',likes:'32.8万',color:'#FF6347',emoji:'💪',
-analysis:'身材变化天然视觉冲击+第X天系列完播率极高+前后对比照即最佳封面，健身+滑雪跨界受众广',
-adaptation:'【滑雪二创】30天滑雪体能训练计划：从气喘吁吁到轻松滑全天。每天一个核心+腿部训练动作（波比跳/深蹲/平板支撑），第1天vs第30天雪场体能对比。文案：「先练好身体，再去征服雪山」。拍摄：固定机位记录训练+雪场滑行对比。'},
-{id:7,title:'滑雪穿搭：雪场最靓的仔怎么穿',platform:'小红书',author:'@雪地时尚控',views:'890万',likes:'67.3万',color:'#DC143C',emoji:'🧥',
+{id:3,title:'冲浪新手第一次追到浪是什么体验',platform:'抖音',author:'@海浪小王子',views:'189万',likes:'15.2万',color:'#00BFFF',emoji:'🏄',
+cover:'https://images.unsplash.com/photo-1522056615691-da7b8106c665?w=640&q=70',
+analysis:'新手入门+情绪递进+海洋治愈感+失败到成功的反转结构，冲浪赛道流量稳定增长',
+adaptation:'【户外二创】冲浪vlog：从岸上紧张→下水被浪打翻→终于站起来滑行5秒。配欢快BGM，文案：「被海浪打翻的第N次，我终于站起来了」。拍摄：GoPro防水+岸边朋友抓拍。'},
+{id:4,title:'城市骑行：凌晨5点空无一人的街道太美了',platform:'小红书',author:'@骑行侠客',views:'456万',likes:'38.9万',color:'#FF9500',emoji:'🚴',
+cover:'https://images.unsplash.com/photo-1541625602330-2277a4c46182?w=640&q=70',
+analysis:'城市晨骑氛围感+空镜美学+通勤族共鸣+低门槛高传播，骑行赛道持续热门',
+adaptation:'【户外二创】晨骑系列：不同季节/天气的城市清晨骑行。固定路线打卡，对比四季变化。文案：「这座城市还没醒，我已经在路上」。拍摄：车把第一视角+延时摄影。'},
+{id:5,title:'攀岩小白第一次登顶，腿抖到不行',platform:'B站',作者:'@岩壁挑战者',views:'278万',likes:'22.1万',color:'#FF6347',emoji:'🧗',
+cover:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=640&q=70',
+analysis:'恐高+坚持+突破自我的普世情感+攀岩视觉张力天然吸睛，励志类内容完播率极高',
+adaptation:'【户外二创】攀岩成长日记：从抱石墙3米到室外15米线路。每期一个技术点（脚法/手部发力/呼吸），录下每次登顶的激动时刻。拍摄：头盔GoPO+地面仰拍。'},
+{id:6,title:'深潜30米：海底世界比想象中更震撼',platform:'抖音',author:'@深海探险家',views:'320万',likes:'26.7万',color:'#007AFF',emoji:'🤿',
+cover:'https://images.unsplash.com/photo-1483721310020-03333e577078?w=640&q=70',
+analysis:'深海猎奇+色彩震撼+未知感吸引停留+潜水装备展示自带种草属性',
+adaptation:'【户外二创】潜水vlog：从下潜前的紧张检查→入水瞬间→鱼群环绕→上浮后的兴奋。配舒缓环境音。文案：「陆地上的烦恼，在30米深的海底都不存在了」。拍摄：水下相机+水面无人机。'},
+{id:7,title:'马拉松最后2公里：身体想放弃但脑子说不',platform:'小红书',author:'@跑者日记',views:'512万',likes:'42.3万',color:'#34C759',emoji:'🏃',
+cover:'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=640&q=70',
+analysis:'极限状态真实记录+意志力共鸣+跑者群体认同感+数据化呈现（配速/心率）增加专业度',
+adaptation:'【户外二创】马拉松vlog：赛前准备→起跑兴奋→30公里撞墙期→咬牙坚持→冲线崩溃。叠加运动手表数据画面。文案：「最后2公里，我和自己的战争」。拍摄：胸挂相机+跟拍。'},
+{id:8,title:'露营篝火夜：和朋友在星空下聊到天亮',platform:'B站',author:'@山野生活家',views:'389万',likes:'31.5万',color:'#FFD700',emoji:'⛺',
+cover:'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?w=640&q=70',
+analysis:'治愈系露营+社交属性+星空/篝火视觉钩子+逃离城市的共鸣，露营赛道长青内容',
+adaptation:'【户外二创】露营vlog：选址搭帐篷→生火做饭→夜晚篝火聊天→清晨日出。强调「没有信号的日子」。拍摄：广角风景+手持夜景。'},
+{id:9,title:'健身房练腿日：深蹲到站不起来',platform:'抖音',author:'@铁馆老张',views:'678万',likes:'55.1万',color:'#AF52DE',emoji:'🏋️',
+cover:'https://images.unsplash.com/photo-1605540436563-5bca919ae766?w=640&q=70',
+analysis:'健身强度可视化+痛苦但爽的反差萌+训练计划可复制性带来收藏+身材变化是终极钩子',
+adaptation:'【户外二创】训练vlog：每周一个主题（练腿/练背/练腹）。记录完整训练过程+组间感受+练后餐。文案：「今天的腿，明天的痛」。拍摄：固定机位全身+特写。'},
+{id:10,title:'公路自行车赛：最后冲刺那一刻燃爆了',platform:'B站',author:'@骑行前线',views:'423万',likes:'34.8万',color:'#5856D6',emoji:'🚲',
+cover:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=640&q=70',
+analysis:'竞技体育速度感+团队战术+冲刺高潮+专业解说提升格调，自行车赛事剪辑天然高传播',
+adaptation:'【户外二创】骑行比赛集锦：精选各大赛事冲刺片段+慢放分析战术。科普骑行术语（突围集团/大集团/领骑衫）。拍摄：赛事官方素材+画外音解说。'},
+{id:11,title:'游泳自由泳教学：换气是新手最大难关',platform:'小红书',author:'@泳池教练Lisa',views:'298万',likes:'24.3万',color:'#00CED1',emoji:'🏊',
+cover:'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=640&q=70',
+analysis:'刚需痛点教学+水上运动门槛低受众广+分解步骤清晰易学+错误示范增加趣味',
+adaptation:'【户外二创」游泳教学系列：自由泳/蛙泳/仰泳/蝶泳每期一个重点。水下拍摄动作细节+常见错误对比。文案：「学会换气，你就学会了自由泳」。拍摄：水下相机+池边示范。'},
+{id:12,title:'瑜伽晨练：每天10分钟改变体态',platform:'抖音',作者:'@瑜伽生活',views:'567万',likes:'48.2万',color:'#FF69B4',emoji:'🧘',
+cover:'https://images.unsplash.com/photo-1502933622096-cf907a7e32eb?w=640&q=70',
+analysis:'低门槛健康内容+体态改善共鸣+短时长适合碎片时间+女性用户占比高转化好',
+adaptation:'【户外二创】每日瑜伽系列：按部位分类（肩颈/腰背/髋部）。每个动作给保持时间和呼吸节奏。前后对比照收尾。文案：「10分钟，给自己一个更好的姿态」。拍摄：明亮室内+自然光。'},
+{id:13,title:'徒步穿越：三天两夜无人区的生存记录',platform:'B站',author:'@荒野行者',views:'345万',likes:'27.6万',color:'#8E8E93',emoji:'🥾',
+cover:'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=640&q=70',
+analysis:'野外生存猎奇+壮丽风景+真实困难增强代入感+装备清单自带实用价值',
+adaptation:'【户外二创】徒步vlog：路线规划→装备打包→途中困难（迷路/缺水/天气突变）→抵达终点的释放。配环境音和内心独白。文案：「走出舒适区，才发现自己有多强」。拍摄：GoPro+无人机航拍。'},
+{id:14,title:'滑板街头：从Ollie到街头的自由灵魂',platform:'抖音',author:'@板仔阿飞',views:'234万',likes:'19.8万',color:'#FF2D55',emoji:'🛹',
+cover:'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=640&q=70',
+analysis:'街头文化酷感+技巧进阶清晰+摔跤花絮增加真实感+年轻用户核心圈层',
+adaptation:'【户外二创】滑板教学：Ollie→Kickflip→Varial Heelflip。每招分步慢放+常见失误。穿插街头巡游片段。文案：「摔100次，帅1秒，值」。拍摄：低角度跟拍+三脚架固定。'},
+{id:15,title:'健身房力量区：硬拉200kg是什么体验',platform:'小红书',author:'@举铁少女',views:'198万',likes:'16.5万',color:'#FF9500',emoji:'💪',
+cover:'https://images.unsplash.com/photo-1461896836934-bd45ba8ba9ef?w=640&q=70',
+analysis:'力量训练视觉冲击+数字目标明确+渐进式超负荷叙事+男女通吃的内容方向',
+adaptation:'【户外二创】力量训练vlog：热身→主项（深蹲/硬拉/卧推）→辅助→拉伸。记录重量进度和PR时刻。文案：「今天又加了2.5kg」。拍摄：侧面全身+杠铃特写。'},
+{id:16,title:'滑雪穿搭：雪场最靓的仔怎么穿',platform:'小红书',author:'@雪地时尚控',views:'890万',likes:'67.3万',color:'#DC143C',emoji:'🧥',
+cover:'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=640&q=70',
 analysis:'颜值穿搭类受众极广+种草属性强+雪场大片即天然封面，女性用户占比高转化好',
 adaptation:'【滑雪二创】雪场穿搭三套：甜酷风/机能风/纯色高级风。每套标注单品和配色逻辑，结尾放雪场实穿大片。文案：「滑雪三分钟，拍照两小时」。拍摄：雪场逆光人像+服装细节特写。'},
-{id:8,title:'北海道粉雪之旅：滑进童话里',platform:'B站',author:'@旅人小鹿',views:'189万',likes:'14.2万',color:'#FFD700',emoji:'🏔️',
+{id:17,title:'北海道粉雪之旅：滑进童话里',platform:'B站',author:'@旅人小鹿',views:'189万',likes:'14.2万',color:'#FFD700',emoji:'🏔️',
+cover:'https://images.unsplash.com/photo-1502680390469-be4c1e41a7ea?w=640&q=70',
 analysis:'旅行+滑雪双重流量+异国雪景猎奇+攻略属性带来高收藏，长视频完播稳',
 adaptation:'【滑雪二创】滑雪旅行vlog：行前准备→雪场选择→每日滑行路线→美食住宿。穿插实用攻略字幕。文案：「这趟粉雪，值得飞半个球」。拍摄：运动相机第一视角滑行+风景空镜。'},
-{id:9,title:'双板平行式教学：刹车与转弯一次说清',platform:'抖音',author:'@双板老王',views:'278万',likes:'21.0万',color:'#32ADE6',emoji:'🎯',
-analysis:'刚需教学+痛点明确（刹车是新手最大恐惧）+步骤化讲解收藏率高',
-adaptation:'【滑雪二创】「不敢刹车？3个练习就够了」：犁式减速→半犁式→平行式。每步给练习场地建议和常见失误。拍摄：正面示范+脚下特写慢放。'},
-{id:10,title:'滑雪摄影：GoPro第一视角怎么拍出大片',platform:'小红书',author:'@雪镜导演',views:'167万',likes:'13.4万',color:'#5856D6',emoji:'🎥',
-analysis:'工具教学类高收藏+降低拍摄门槛吸引新手+成片展示即钩子，摄影滑雪跨界',
-adaptation:'【滑雪二创】手机/运动相机滑雪拍摄指南：机位（头盔/胸前/雪杖）、参数、运镜节奏。放对比成片。文案：「不用无人机也能拍出雪道大片」。拍摄：分屏演示前后对比。'},
-{id:11,title:'滑雪翻车名场面：最后一个绝了',platform:'抖音',author:'@雪场名场面',views:'512万',likes:'40.1万',color:'#FF2D55',emoji:'😂',
+{id:18,title:'滑雪翻车名场面：最后一个绝了',platform:'抖音',author:'@雪场名场面',views:'512万',likes:'40.1万',color:'#FF2D55',emoji:'😂',
+cover:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=640&q=70',
 analysis:'名场面合集天然高传播+情绪过山车+适合转发艾特雪友，搞笑赛道裂变强',
 adaptation:'【滑雪二创】「雪场迷惑行为大赏」：各种翻车+社死瞬间，结尾放一个神仙操作反转。配魔性BGM和音效。文案：「看完记得@你那个总摔的朋友」。拍摄：收集雪友授权片段+关键帧慢放。'},
-{id:12,title:'冬奥冠军同款动作，我的练习日常',platform:'B站',author:'@追梦小将',views:'203万',likes:'16.8万',color:'#34C759',emoji:'🥇',
+{id:19,title:'冬奥冠军同款动作，我的练习日常',platform:'B站',author:'@追梦小将',views:'203万',likes:'16.8万',color:'#34C759',emoji:'🥇',
+cover:'https://images.unsplash.com/photo-1526401485004-563b8fe03fd7?w=640&q=70',
 analysis:'冠军光环自带流量+励志成长叙事+普通人的坚持引发共鸣，正能量内容易上热门',
 adaptation:'【滑雪二创】「模仿冠军动作第N天」：选一个冠军标志性动作，记录从笨拙到像样的练习。文案：「冠军也是练出来的」。拍摄：对照冠军视频分屏+自己练习慢放。'}
 ];
@@ -1091,7 +1300,7 @@ function refreshVideos(){var vs=getVideoState();vs.lastUpdate='';vs.dailyVideos=
 function switchVTab(tab,btn){
   document.querySelectorAll('#contentArea .tab-item').forEach(function(t){t.classList.remove('active')});
   btn.classList.add('active');
-  var vs=getVideoState();var dv=vs.dailyVideos||VIDEOS.slice(0,4);
+  var vs=getVideoState();var dv=vs.dailyVideos||VIDEOS;
   renderVideoCards(tab,dv);
 }
 function videoCover(v){
@@ -1104,7 +1313,8 @@ function renderVideoCards(tab,dv){
   var el=document.getElementById('videoList');if(!el)return;var h='';
   dv.forEach(function(v){
     if(tab==='ski'){
-      h+='<div class="card" style="border-left:3px solid #007aff"><div class="card-title">🎿 '+v.emoji+' 基于「'+v.title+'」的滑雪二创方案</div><div style="font-size:13px;line-height:1.7;color:var(--text2);margin-top:6px">'+v.adaptation+'</div></div>';
+      var sportTag=v.title.match(/滑雪/)?'🎿 滑雪':v.title.match(/冲浪|潜水/)?'🌊 水上':v.title.match(/骑行|自行车/)?'🚴 骑行':v.title.match(/攀岩/)?'🧗 攀岩':v.title.match(/跑步|马拉松/)?'🏃 跑步':v.title.match(/露营|徒步/)?'⛺ 户外':v.title.match(/健身|瑜伽/)?'🧘 运动':'🎬 二创';
+      h+='<div class="card" style="border-left:3px solid '+v.color+'"><div class="card-title">'+sportTag+' 基于「'+v.title+'」的二创方案</div><div style="font-size:13px;line-height:1.7;color:var(--text2);margin-top:6px">'+v.adaptation+'</div></div>';
     }else{
       h+='<div class="video-card"><div class="video-cover">'+videoCover(v)+'</div><div class="video-info"><h4>'+v.title+'</h4><div class="video-stat">'+v.platform+' · '+v.author+' · 👁 '+v.views+' · ❤ '+v.likes+'</div>'+(v.analysis?'<div style="font-size:12px;line-height:1.6;color:var(--text2);margin-top:6px"><b style="color:var(--text1)">爆款分析：</b>'+v.analysis+'</div>':'')+'</div></div>';
     }
@@ -1412,6 +1622,45 @@ const FOOD_DB = [
 {name:'啤酒鸭',cal:168,unit:'100g'},{name:'剁椒鱼头',cal:82,unit:'100g'},{name:'毛血旺',cal:128,unit:'100g'},
 {name:'回锅肉',cal:262,unit:'100g'},{name:'蚂蚁上树',cal:165,unit:'100g'},{name:'鱼香茄子',cal:82,unit:'100g'},
 {name:'宫保虾球',cal:142,unit:'100g'},{name:'西湖醋鱼',cal:72,unit:'100g'},{name:'东坡肉',cal:325,unit:'100g'},
+// v17 expanded: desserts & pastries
+{name:'泡芙',cal:321,unit:'100g'},{name:'奶油泡芙',cal:385,unit:'100g'},{name:'提拉米苏',cal:298,unit:'100g'},
+{name:'芝士蛋糕',cal:340,unit:'100g'},{name:'巧克力蛋糕',cal:395,unit:'100g'},{name:'戚风蛋糕',cal:258,unit:'100g'},
+{name:'海绵蛋糕',cal:272,unit:'100g'},{name:'慕斯蛋糕',cal:245,unit:'100g'},{name:'千层蛋糕',cal:320,unit:'100g'},
+{name:'瑞士卷',cal:265,unit:'100g'},{name:'蛋挞',cal:285,unit:'一个(约50g)'},{name:'月饼',cal:398,unit:'100g'},
+{name:'绿豆糕',cal:352,unit:'100g'},{name:'红豆饼',cal:278,unit:'100g'},{name:'老婆饼',cal:310,unit:'100g'},
+{name:'蛋黄酥',cal:365,unit:'一个'},{name:'酥皮点心',cal:420,unit:'100g'},{name:'拿破仑蛋糕',cal:380,unit:'100g'},
+{name:'马卡龙',cal:405,unit:'100g'},{name:'布朗尼',cal:445,unit:'100g'},{name:'舒芙蕾',cal:165,unit:'一份'},
+{name:'班戟',cal:220,unit:'一份'},{name:'铜锣烧',cal:195,unit:'一个'},{name:'华夫饼',cal:291,unit:'100g'},
+{name:'可丽饼',cal:215,unit:'一张'},{name:'松饼/pancake',cal:227,unit:'100g'},{name:'甜甜圈',cal:305,unit:'一个'},
+{name:'麻花',cal:486,unit:'100g'},{name:'桃酥',cal:468,unit:'100g'},{name:'绿豆饼',cal:342,unit:'100g'},
+// v17 expanded: dairy & cheese
+{name:'芝士片',cal:302,unit:'一片(20g)'},{name:'马苏里拉芝士',cal:318,unit:'100g'},{name:'帕玛森芝士',cal:392,unit:'100g'},
+{name:'奶油奶酪',cal:346,unit:'100g'},{name:'酸奶(希腊)',cal:97,unit:'100g'},{name:'乳酸菌饮料',cal:52,unit:'100ml'},
+{name:'炼乳',cal:332,unit:'100g'},{name:'双皮奶',cal:92,unit:'100g'},{name:'姜撞奶',cal:85,unit:'100g'},
+{name:'奶酪棒',cal:280,unit:'一根(20g)'},{name:'黄油曲奇',cal:495,unit:'100g'},{name:'奶油面包',cal:365,unit:'100g'},
+// v17 expanded: puffed snacks
+{name:'薯片',cal:536,unit:'100g'},{name:'虾条',cal:458,unit:'100g'},{name:'锅巴',cal:512,unit:'100g'},
+{name:'爆米花',cal:387,unit:'100g'},{name:'米果',cal:425,unit:'100g'},{name:'仙贝',cal:430,unit:'100g'},
+{name:'膨化玉米球',cal:450,unit:'100g'},{name:'妙脆角',cal:495,unit:'100g'},{name:'旺旺雪饼',cal:442,unit:'100g'},
+{name:'麦片脆',cal:385,unit:'100g'},{name:'坚果能量棒',cal:465,unit:'一根'},{name:'蛋白棒',cal:350,unit:'一根'},
+// v17 expanded: cold noodles & summer dishes
+{name:'凉面',cal:145,unit:'一碗(约300g)'},{name:'鸡丝凉面',cal:178,unit:'一碗'},{name:'朝鲜冷面',cal:155,unit:'一碗'},
+{name:'拌面',cal:168,unit:'一碗'},{name:'凉皮',cal:117,unit:'一份'},{name:'牛筋面',cal:135,unit:'一碗'},
+{name:'荞麦面',cal:132,unit:'100g'},{name:'莜面',cal:138,unit:'100g'},{name:'米粉',cal:162,unit:'100g'},
+{name:'凉粉',cal:65,unit:'100g'},{name:'凉虾',cal:58,unit:'100g'},{name:'冰粉',cal:72,unit:'一碗'},
+{name:'酸辣粉',cal:365,unit:'一碗'},{name:'肥肠粉',cal:295,unit:'一碗'},{name:'冒菜',cal:220,unit:'一份'},
+// v17 expanded: more stir-fries & braised
+{name:'鱼香茄子',cal:82,unit:'100g'},{name:'地三鲜',cal:89,unit:'100g'},{name:'干煸豆角',cal:120,unit:'100g'},
+{name:'干锅菜花',cal:85,unit:'100g'},{name:'干锅土豆片',cal:110,unit:'100g'},{name:'干煸四季豆',cal:95,unit:'100g'},
+{name:'虎皮青椒',cal:45,unit:'100g'},{name:'可乐鸡翅',cal:178,unit:'100g'},{name:'啤酒鸭',cal:168,unit:'100g'},
+{name:'剁椒鱼头',cal:82,unit:'100g'},{name:'毛血旺',cal:128,unit:'100g'},{name:'水煮肉片',cal:185,unit:'100g'},
+{name:'蒜泥白肉',cal:225,unit:'100g'},{name:'口水鸡',cal:195,unit:'100g'},{name:'夫妻肺片',cal:172,unit:'100g'},
+{name:'凉拌牛肉',cal:158,unit:'100g'},{name:'拍黄瓜',cal:25,unit:'100g'},{name:'糖拌西红柿',cal:42,unit:'100g'},
+{name:'蒜蓉蒸扇贝',cal:98,unit:'100g'},{name:'蒜蓉生蚝',cal:85,unit:'100g'},{name:'椒盐鱿鱼',cal:165,unit:'100g'},
+{name:'铁板豆腐',cal:135,unit:'100g'},{name:'烤茄子',cal:78,unit:'100g'},{name:'烤韭菜',cal:55,unit:'100g'},
+{name:'蒜蓉粉丝娃娃菜',cal:48,unit:'100g'},{name:'耗油丝瓜',cal:62,unit:'100g'},{name:'清炒芦笋',cal:22,unit:'100g'},
+{name:'上汤娃娃菜',cal:68,unit:'100g'},{name:'白灼秋葵',cal:32,unit:'100g'},{name:'蒜蓉空心菜',cal:32,unit:'100g'}
+];
 {name:'梅菜扣肉',cal:342,unit:'100g'},{name:'粉蒸肉',cal:268,unit:'100g'},{name:'红烧狮子头',cal:198,unit:'100g'},
 {name:'糖醋排骨',cal:285,unit:'100g'},{name:'葱油鸡',cal:168,unit:'100g'},{name:'白切鸡',cal:145,unit:'100g'},
 {name:'盐焗鸡',cal:172,unit:'100g'},{name:'清炒虾仁',cal:62,unit:'100g'},{name:'油焖大虾',cal:142,unit:'100g'},
@@ -1514,7 +1763,7 @@ function splitComboFood(q){
     if(ingredients.length>=1)ingredients.push({name:'烹调油',cal:899,unit:'10g(约90kcal)',source:'自动估算:炒菜用油'});
     if(ingredients.length>=2)return ingredients;
   }
-  var commonFoods=['豆腐','鸡蛋','白菜','土豆','番茄','肉','鸡','牛','羊','猪','鱼','虾','面','饭','菜','菇','瓜','豆','椒','笋','芹'];
+  var commonFoods=['豆腐','鸡蛋','白菜','土豆','番茄','肉','鸡','牛','羊','猪','鱼','虾','面','饭','菜','菇','瓜','豆','椒','笋','芹','藕','洋葱','胡萝卜','韭菜','茄子','青椒','黄瓜','西葫芦','菜花','冬瓜','丝瓜','苦瓜','秋葵','木耳','粉丝','粉条','宽粉','年糕','米线','河粉','米粉','荞麦','莜面','红薯','南瓜','山药','莲藕','豆芽','金针菇','香菇','蘑菇','海带','紫菜','虾仁','蟹','鱿鱼','贝','蛤','蛏','扇贝','生蚝','芝士','奶酪','培根','火腿','香肠','腊肠','腊肉','腊味','肥牛','毛肚','鸭血','百叶','黄喉','午餐肉','鱼丸','虾滑','豆腐皮','腐竹','油条','馄饨','饺子','包子','馒头','花卷','烧饼','面包','吐司','蛋糕','泡芙','饼干','薯片','巧克力','冰淇淋','奶茶','可乐','雪碧','啤酒','果汁','咖啡'];
   var foundFrags=[];var remaining=q;
   for(var j=0;j<commonFoods.length;j++){
     var pos=remaining.indexOf(commonFoods[j]);
@@ -1651,11 +1900,38 @@ function renderThoughtsList(st,filterCat){
   el.innerHTML='<div class="grid-2">'+notes.map(function(n,i){
     var originalIdx=allNotes.indexOf(n);
     var catTag='<span class="tag"'+(n.category==='灵感'?' style="background:rgba(175,82,222,.1);color:#af52de"':n.category==='碎碎念'?' style="background:rgba(255,45,85,.1);color:#ff2d55"':n.category==='小时刻'?' style="background:rgba(52,199,89,.1);color:#34c759"':'')+'>'+(n.category||'其他')+'</span>';
-    var imgHTML=n.photo?'<img src="'+n.photo+'" class="tc-img" style="height:100px" onclick="previewImg(\''+n.photo+'\')" loading="lazy">':'';
     var aiLabel=n.ai?'<span style="font-size:9px;color:var(--accent);margin-left:4px">AI</span>':'';
+    // Truncate text for preview (max ~80 chars)
+    var previewText=n.text;
+    var isLong=n.text.length>80;
+    if(isLong)previewText=n.text.substring(0,80)+'...';
+    var imgHTML=n.photo?'<img src="'+n.photo+'" class="tc-img" style="height:'+(isLong?'80':'100')+'px" onclick="previewImg(\''+n.photo+'\')" loading="lazy">':'';
     var cls=n.photo?'thought-card':'thought-card text-only';
-    return'<div class="'+cls+'" style="margin-bottom:0">'+imgHTML+'<button class="tc-delete" onclick="rmThought('+originalIdx+')">✕</button><div class="tc-body" style="padding:10px"><div class="tc-text" style="font-size:13px">'+n.text+'</div><div class="tc-meta"><span style="font-size:9px">'+new Date(n.time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span><span style="display:flex;align-items:center;gap:4px">'+catTag+aiLabel+'</span></div></div></div>';
+    var timeStr=new Date(n.time).toLocaleString('zh-CN',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    return'<div class="'+cls+'" style="margin-bottom:0;cursor:pointer" onclick="showThoughtDetail('+originalIdx+')">'+
+      imgHTML+
+      '<button class="tc-delete" onclick="event.stopPropagation();rmThought('+originalIdx+')" style="z-index:2">✕</button>'+
+      '<div class="tc-body" style="padding:10px"><div class="tc-text" style="font-size:13px;line-height:1.5">'+previewText+(isLong?' <span style="color:var(--accent);font-size:11px">展开</span>':'')+'</div>'+
+      '<div class="tc-meta"><span style="font-size:9px">'+timeStr+'</span><span style="display:flex;align-items:center;gap:4px">'+catTag+aiLabel+'</span></div></div></div>';
   }).join('')+'</div>';
+}
+function showThoughtDetail(idx){
+  var st=ld('thoughts',{notes:[]});
+  if(idx<0||idx>=st.notes.length)return;
+  var n=st.notes[idx];
+  var catTag='<span class="tag"'+(n.category==='灵感'?' style="background:rgba(175,82,222,.1);color:#af52de"':n.category==='碎碎念'?' style="background:rgba(255,45,85,.1);color:#ff2d55"':n.category==='小时刻'?' style="background:rgba(52,199,89,.1);color:#34c759"':'')+'>'+(n.category||'其他')+'</span>';
+  var aiLabel=n.ai?'<span style="font-size:9px;color:var(--accent);margin-left:4px">AI</span>':'';
+  var imgHTML=n.photo?'<img src="'+n.photo+'" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-sm);margin-bottom:10px" loading="lazy">':'';
+  var timeStr=new Date(n.time).toLocaleString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'});
+  showDialog('笔记详情',
+    '<div style="line-height:1.7;font-size:14px;color:var(--text1)">'+
+    imgHTML+
+    '<div style="white-space:pre-wrap;word-break:break-word;margin-bottom:12px">'+n.text+'</div>'+
+    '<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);border-top:1px solid rgba(0,0,0,.06);padding-top:8px">'+
+    '<span>📅 '+timeStr+'</span>'+catTag+aiLabel+
+    '</div></div>',
+    null
+  );
 }
 function rmThought(i){showConfirm('删除笔记','确定要删除这条笔记吗？',function(){var st=ld('thoughts',{notes:[]});if(i>=0&&i<st.notes.length)st.notes.splice(i,1);sv('thoughts',st);flushCloud();renderThoughtsList(st, window._thoughtFilter||'全部');if(GistSync.isReady())setTimeout(function(){GistSync.load().then(function(d){if(d)mergeCloud(d);renderThoughtsList(ld('thoughts',{notes:[]}), window._thoughtFilter||'全部');}).catch(function(){})},450);toast('已删除')})}
 
@@ -1694,7 +1970,7 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('#foodSearch')&&!e.target.closest('#foodSearchResults')){
     var r=document.getElementById('foodSearchResults');if(r)r.classList.remove('show');
   }
-  var pop=document.getElementById('wordPopup');if(pop&&!e.target.closest('.word-tap'))pop.style.display='none';
+  var pop=document.getElementById('wordPopup');if(pop&&pop.classList.contains('show')&&!e.target.closest('.dict-modal'))closeDict();
 });
 
 // ============ INIT ============
