@@ -217,7 +217,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">英语口语练习</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v15</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v16</span>
       <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
       <span style="flex:1"></span>
       <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
@@ -257,14 +257,9 @@ setTimeout(function(){
 },5000);
 // If other scripts loaded, cancel this failsafe
 window._failsafeClear=function(){var ls=document.getElementById('loadingScreen');if(ls)ls.remove()};
-// Self-heal: if a newer version is deployed, reload once
-setTimeout(function(){
-  try{
-    fetch('./version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(v){
-      if(v&&v.version&&String(v.version)!=='14'){location.reload(true);}
-    }).catch(function(){});
-  }catch(e){}
-},2500);
+// v16: self-heal auto-reload REMOVED — hardcoded version ('14') caused infinite
+// reload loop after v15 deploy (every load: '15'!=='14' → reload → back to home).
+// Version updates are now handled solely by checkAppVersion() with reload guard.
 </script>
 
 <!-- Cloud Sync Settings Panel -->
@@ -515,7 +510,7 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '15';
+var APP_VERSION = '16';
 var SYNC_KEYS = ['fitness','thoughts','calorie','english','videos','avatar'];
 
 // Version migration: if old version, clear cache on next SW update
@@ -585,10 +580,10 @@ function mergeCloud(cloudData) {
     }
   });
   if (merged > 0) {
-    console.log('[Cloud] Merged ' + merged + ' keys from cloud');
+    console.log('[Cloud] Merged ' + merged + ' keys from cloud (silent — no auto re-render)');
     updateSyncBadge('online');
-    var cur = document.querySelector('.nav-item.active');
-    if (cur) cur.click();
+    // v16: no automatic page re-render on periodic sync. Auto cur.click() every 15s
+    // interrupted user input/scroll. Merged data appears on next page switch or manual refresh.
   }
 }
 
@@ -642,7 +637,7 @@ function startCloudSync() {
 // ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=15').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=16').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
@@ -719,24 +714,34 @@ function checkAppVersion() {
         })
         .then(function(remote) { handleVersionResult(remote); })
         .catch(function(err2) {
+          // v16: no auto-retry loop — single check per load; assume current on failure.
           console.warn('[Version] Both sources failed (' + err1.message + ', ' + err2.message + ') — assuming current');
-          // Could not verify — assume current, but set auto-retry
-          setTimeout(checkAppVersion, 30000);
         });
     });
 }
 
 function handleVersionResult(remote) {
   var remoteVer = String(remote.version || remote.sw || '');
-  if (remoteVer !== APP_VERSION) {
-    console.warn('[Version] Remote v' + remoteVer + ' vs local v' + APP_VERSION + ' — forcing update');
-    // Clear all caches
+  var remoteNum = parseInt(remoteVer, 10), localNum = parseInt(APP_VERSION, 10);
+  // v16 guard 1: only act when remote is strictly NEWER (stale CDN returning an
+  // older number must never trigger a reload — that caused reload loops).
+  if (!isNaN(remoteNum) && !isNaN(localNum) && remoteNum > localNum) {
+    // v16 guard 2: auto-reload at most ONCE per remote version per session.
+    var guardKey = 'wb5_auto_reloaded_' + remoteVer;
+    var already = false;
+    try { already = sessionStorage.getItem(guardKey) === '1'; } catch(e) {}
+    if (already) {
+      console.warn('[Version] Remote v' + remoteVer + ' newer but already auto-reloaded once — showing banner only');
+      showUpdateBanner(null);
+      return;
+    }
+    try { sessionStorage.setItem(guardKey, '1'); } catch(e) {}
+    console.warn('[Version] Remote v' + remoteVer + ' > local v' + APP_VERSION + ' — one-time update');
     if ('caches' in window) {
       caches.keys().then(function(keys) {
         keys.forEach(function(k) { caches.delete(k); });
       });
     }
-    // Unregister SW
     if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistration) {
       navigator.serviceWorker.getRegistration().then(function(reg) {
         if (reg) { reg.unregister(); }
@@ -746,7 +751,7 @@ function handleVersionResult(remote) {
       location.reload(true);
     }
   } else {
-    console.log('[Version] Remote v' + remoteVer + ' matches local v' + APP_VERSION + ' ✓');
+    console.log('[Version] Remote v' + remoteVer + ' vs local v' + APP_VERSION + ' — no forced update');
   }
 }
 
@@ -1695,9 +1700,10 @@ document.addEventListener('click',function(e){
 // ============ INIT ============
 // Failsafe: hide loading screen NO MATTER WHAT after 6s (CSS failsafe is 5s, this is backup)
 var _loadTimeout = setTimeout(function() {
-  console.warn('[Init] Loading timeout — force reloading');
+  // v16: NEVER reload here — on slow iOS PWA cold-start this caused a reload loop.
+  // Just force-hide the loading screen and let the page show whatever rendered.
+  console.warn('[Init] Loading timeout — force showing page (no reload)');
   window._failsafeClear();
-  location.reload(true);
 }, 6000);
 
 function _finishInit() {
