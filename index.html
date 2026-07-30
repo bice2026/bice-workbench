@@ -261,7 +261,7 @@ window._failsafeClear=function(){var ls=document.getElementById('loadingScreen')
 setTimeout(function(){
   try{
     fetch('./version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(v){
-      if(v&&v.version&&String(v.version)!=='13'){location.reload(true);}
+      if(v&&v.version&&String(v.version)!=='14'){location.reload(true);}
     }).catch(function(){});
   }catch(e){}
 },2500);
@@ -330,7 +330,7 @@ var GistSync = {
         public: false,
         files: {
           'workbench-data.json': {
-            content: JSON.stringify({_app:'bice-workbench',_version:'12',_created:new Date().toISOString()})
+            content: JSON.stringify({_app:'bice-workbench',_version:'14',_created:new Date().toISOString()})
           }
         }
       })
@@ -515,7 +515,7 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '13';
+var APP_VERSION = '14';
 var SYNC_KEYS = ['fitness','thoughts','calorie','english','videos','avatar'];
 
 // Version migration: if old version, clear cache on next SW update
@@ -535,12 +535,17 @@ function ld(k, d) {
   try { var r = localStorage.getItem('wb5_' + k); return r ? JSON.parse(r) : d; } catch(e) { return d; }
 }
 
-// Write to localStorage + schedule cloud push
+// Write to localStorage + schedule cloud push (per-key timestamp enables Last-Writer-Wins merge)
 var _cloudPushTimer = null;
+function tsKey(k){return 'wb5_'+k+'_ts';}
+function getTs(k){var t=localStorage.getItem(tsKey(k));return t?parseInt(t,10):0;}
 function sv(k, v) {
-  try { localStorage.setItem('wb5_' + k, JSON.stringify(v)); } catch(e) { toast('存储空间不足，请清理数据'); return; }
+  try { localStorage.setItem('wb5_' + k, JSON.stringify(v)); localStorage.setItem(tsKey(k), String(Date.now())); } catch(e) { toast('存储空间不足，请清理数据'); return; }
   scheduleCloudPush();
 }
+// Immediately push local data to cloud (used right after a delete so the deletion
+// propagates to the other end without waiting for the 800ms debounce).
+function flushCloud(){ if (GistSync.isReady()) { clearTimeout(_cloudPushTimer); pushToCloud(); } }
 
 // Debounced cloud push after local changes
 function scheduleCloudPush() {
@@ -555,26 +560,33 @@ function scheduleCloudPush() {
 function pushToCloud() {
   if (!GistSync.isReady()) return;
   updateSyncBadge('syncing');
-  var data = { _app: 'bice-workbench', _version: APP_VERSION, _updated: new Date().toISOString() };
+  var data = { _app: 'bice-workbench', _version: APP_VERSION, _updated: new Date().toISOString(), _ts: {} };
   SYNC_KEYS.forEach(function(k) {
-    try { var r = localStorage.getItem('wb5_' + k); if (r) data[k] = JSON.parse(r); } catch(e) {}
+    try { var r = localStorage.getItem('wb5_' + k); if (r) { data[k] = JSON.parse(r); data._ts[k] = getTs(k); } } catch(e) {}
   });
   GistSync.save(data);
 }
 
-// Pull cloud data and merge into localStorage
-function loadCloudData(cloudData) {
+// Merge cloud data into local with Last-Writer-Wins by per-key timestamp.
+// This guarantees a local delete (which bumps local ts to "now") is never
+// overwritten by a stale cloud copy — fixing the "deleted item resurrects" bug.
+function mergeCloud(cloudData) {
   if (!cloudData) return;
   var merged = 0;
   SYNC_KEYS.forEach(function(k) {
     if (!cloudData[k]) return;
-    // Cloud data wins (it's the shared truth)
-    try { localStorage.setItem('wb5_' + k, JSON.stringify(cloudData[k])); merged++; } catch(e) {}
+    var cloudTs = (cloudData._ts && cloudData._ts[k]) ? cloudData._ts[k] : 0;
+    var localTs = getTs(k);
+    if (cloudTs > localTs) {
+      try { localStorage.setItem('wb5_' + k, JSON.stringify(cloudData[k])); localStorage.setItem(tsKey(k), String(cloudTs)); merged++; } catch(e) {}
+    } else if (cloudTs < localTs) {
+      // Local is newer (e.g. just deleted) — push local up so cloud reconciles
+      scheduleCloudPush();
+    }
   });
   if (merged > 0) {
     console.log('[Cloud] Merged ' + merged + ' keys from cloud');
-    toast('已同步 ' + merged + ' 项云端数据');
-    // Refresh current view
+    updateSyncBadge('online');
     var cur = document.querySelector('.nav-item.active');
     if (cur) cur.click();
   }
@@ -588,7 +600,7 @@ function forceCloudPull() {
   updateSyncBadge('syncing');
   GistSync.load().then(function(data) {
     if (data) {
-      loadCloudData(data);
+      mergeCloud(data);
       updateSyncBadge('online');
     } else {
       updateSyncBadge('offline');
@@ -622,20 +634,7 @@ function startCloudSync() {
     if (!GistSync.isReady()) return;
     GistSync.load().then(function(data) {
       if (!data) return;
-      var changed = false;
-      SYNC_KEYS.forEach(function(k) {
-        if (!data[k]) return;
-        var local = null;
-        try { local = JSON.parse(localStorage.getItem('wb5_' + k) || 'null'); } catch(e) {}
-        if (JSON.stringify(local) !== JSON.stringify(data[k])) {
-          try { localStorage.setItem('wb5_' + k, JSON.stringify(data[k])); changed = true; } catch(e) {}
-        }
-      });
-      if (changed) {
-        updateSyncBadge('online');
-        var cur = document.querySelector('.nav-item.active');
-        if (cur) cur.click();
-      }
+      mergeCloud(data);
     }).catch(function() {});
   }, 15000);
 }
@@ -643,7 +642,7 @@ function startCloudSync() {
 // ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=13').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=14').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
@@ -1024,44 +1023,48 @@ function getVideoState(){return ld('videos',{seenIds:[],lastUpdate:''})}
 function saveVideoState(s){sv('videos',s)}
 
 const VIDEOS = [
-{id:1,title:'凌晨5点冲浪，抓到人生最美海浪',platform:'小红书',author:'@浪人阿杰',views:'234万',likes:'18.6万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1GJ411x7h7&page=1&autoplay=0',color:'#007AFF',emoji:'🏄',
-analysis:'极早时间制造反差+第一视角沉浸感+日出海浪视觉冲击，真实感大于精致感',
-adaptation:'【滑雪二创】凌晨4点开车去雪场，滑第一趟没被压过的粉雪。时间线叙事：起床→装备检查→开车上山→第一缕阳光洒在雪道上→滑下第一趟。强调"粉雪就像刚出炉的面包，只有早起的人才能吃到"。拍摄建议：GoPro第一视角+无人机航拍雪道全景。'},
-{id:2,title:'深海水下摄影，美到窒息',platform:'B站',author:'@海洋之心',views:'567万',likes:'45.2万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1oo4y1S7Gq&page=1&autoplay=0',color:'#00CED1',emoji:'🤿',
-analysis:'水下世界天然猎奇+慢镜头纯净配乐治愈+海洋环保议题引发共鸣，情绪过山车是流量密码',
-adaptation:'【滑雪二创】在北海道寻找上帝的调色盘。慢镜头拍雪景：雪板划过粉雪溅起的雪雾慢放、树林间的光影、远处雪山的静谧。配同氛围音乐，结尾加环保理念："这片白色天堂，值得我们用一生去守护"。拍摄建议：DJI Pocket慢动作模式+Godox补光灯。'},
-{id:3,title:'从零学冲浪第30天，进步惊人',platform:'小红书',author:'@小浪花日记',views:'89万',likes:'7.3万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1tW4y1H7F2&page=1&autoplay=0',color:'#FF69B4',emoji:'🌊',
-analysis:'成长型内容天然追更+从菜鸟到入门真实可信+对比视频制造爽感，干货工具属性增加收藏率',
-adaptation:'【滑雪二创】滑雪30天打卡，从推坡到刻滑。做30天对比视频：第1天摔倒合集→第10天推坡→第20天换刃→第30天刻滑。每个阶段加讲解和失败花絮，真实感拉满。拍摄建议：手机三脚架固定机位自拍+关键动作无人机跟拍。'},
-{id:5,title:'新手第一块冲浪板怎么选',platform:'B站',author:'@装备控小马',views:'156万',likes:'12.1万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1ZV411r7xC&page=1&autoplay=0',color:'#FF8C00',emoji:'🛹',
-analysis:'实用干货���决真实痛点+横向对比可视化+评论区UGC形成社区，极早/极晚时间制造稀缺感和自律人设',
-adaptation:'【滑雪二创】新手滑雪装备全攻略：5000块搞定全身（附避坑清单）。做性价比装备推荐：雪板/固定器/雪鞋/雪镜/头盔/护具。每样给3个价位选项，标注适合新手的。结尾给购物清单长截图。拍摄建议：俯拍桌面评测+实拍雪场穿着效果对比。'},
-{id:7,title:'冲浪板涂鸦创意：大海和鲸鱼',platform:'抖音',author:'@海边手艺人',views:'320万',likes:'25.6万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1vW4y1H7S2&page=1&autoplay=0',color:'#7B68EE',emoji:'🎨',
-analysis:'手工创意类天然高完播+翻车到成功的情绪过山车+视觉化成果展示即天然封面素材',
-adaptation:'【滑雪二创】自制滑雪板涂鸦：在纯白雪板上画出夜空极光。从设计稿→上色→喷保护漆全程记录，成果展示放在雪场自然光下拍摄。文案："每一副雪板都是独一无二的艺术品"。拍摄建议：俯拍微距镜头+延时摄影记录创作过程。'},
-{id:8,title:'泡面教程翻车了，但意外好吃',platform:'B站',author:'@厨房小天才',views:'450万',likes:'32.8万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1Yx411V7B3&page=1&autoplay=0',color:'#FF6347',emoji:'🍜',
-analysis:'翻车=天然笑点+反转结局留住观众+日常美食类受众极广，评论区大量UGC互动形成裂变',
-adaptation:'【滑雪二创】滑雪vlog翻车合集：各种摔跤名场面+最后来个完美刻滑反转。用轻松搞笑风格剪辑，配欢快BGM。文案："摔倒99次，第100次终于站稳了"。拍摄建议：头盔GoPro+雪友互拍，关键帧加慢动作和音效。'},
-{id:9,title:'30天练出腹肌，第1天vs第30天',platform:'抖音',author:'@健身教练大刘',views:'890万',likes:'67.3万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1XJ4m1M7Bv&page=1&autoplay=0',color:'#DC143C',emoji:'💪',
-analysis:'身材变化天然视觉冲击+第X天系列完播率极高+前后对比照即最佳封面，健身类永恒流量密码',
-adaptation:'【滑雪二创】30天滑雪体能训练计划：从气喘吁吁到轻松滑全天。每天一个核心+腿部训练动作（波比跳/深蹲/平板支撑），第1天vs第30天雪场体能对比。文案："先练好身体，再去征服雪山"。拍摄建议：固定机位记录训练+雪场滑行对比。'},
-{id:10,title:'在无人沙滩捡到100个贝壳做手工',platform:'小红书',author:'@贝壳少女',views:'189万',likes:'14.2万',
-embedUrl:'https://player.bilibili.com/player.html?bvid=BV1MZ4y1H7R3&page=1&autoplay=0',color:'#FFD700',emoji:'🐚',
-analysis:'寻宝类天然好奇心驱动+手工制作过程=ASMR解压+成品展示高度可分享，适合转发艾特好友',
-adaptation:'【滑雪二创】在雪山捡天然冰晶做项链，把它送给最爱的人。用自然奇遇角度：在雪地中发现冰晶，制作成手工饰品的过程。结尾是温馨的送礼环节。文案："这片雪花来自海拔3000米，只此一枚"。拍摄建议：微距镜头拍冰晶细节+自然光拍摄手工过程。'}
+{id:1,title:'凌晨4点的雪场，滑第一趟没人压过的粉雪',platform:'小红书',author:'@雪线阿杰',views:'234万',likes:'18.6万',color:'#007AFF',emoji:'🎿',
+analysis:'极早时间制造反差+第一视角沉浸感+日出雪道视觉冲击，真实感大于精致感，滑雪圈公认的爆款开头',
+adaptation:'【滑雪二创】时间线叙事：起床→装备检查→开车上山→第一缕阳光洒在雪道上→滑下第一趟。强调「粉雪就像刚出炉的面包，只有早起的人才能吃到」。拍摄：GoPro第一视角+无人机航拍雪道全景，配轻快BGM。'},
+{id:2,title:'单板滑雪刻滑教学：从推坡到换刃全记录',platform:'B站',author:'@滑雪教练老周',views:'567万',likes:'45.2万',color:'#00CED1',emoji:'🏂',
+analysis:'干货教学类天然高收藏+成长曲线清晰+评论区求教形成强互动，新手向内容完播率高',
+adaptation:'【滑雪二创】做「7天学会换刃」系列：第1天推坡→第3天落叶飘→第7天换刃。每期一个重点动作拆解+常见错误示范，结尾放本期成果。拍摄：固定机位侧面拍全身动作+关键帧慢放标注。'},
+{id:3,title:'滑雪摔倒合集，笑着滑完一整天',platform:'抖音',author:'@雪场开心果',views:'89万',likes:'7.3万',color:'#FF69B4',emoji:'⛷️',
+analysis:'翻车=天然笑点+反转结局留住观众+轻松人设易涨粉，滑雪搞笑赛道流量稳定',
+adaptation:'【滑雪二创】滑雪vlog翻车合集：各种摔跤名场面+最后来个完美刻滑反转。轻松搞笑风格剪辑，配欢快BGM。文案：「摔倒99次，第100次终于站稳了」。拍摄：头盔GoPro+雪友互拍，关键帧加慢动作和音效。'},
+{id:4,title:'新手滑雪装备开箱：5000块搞定全身',platform:'B站',author:'@装备控小马',views:'156万',likes:'12.1万',color:'#FF8C00',emoji:'🎒',
+analysis:'实用干货解决真实痛点+横向对比可视化+评论区UGC形成社区，预算类内容收藏率极高',
+adaptation:'【滑雪二创】新手滑雪装备全攻略：雪板/固定器/雪鞋/雪镜/头盔/护具。每样给3个价位选项，标注适合新手的。结尾给购物清单长截图。拍摄：俯拍桌面评测+实拍雪场穿着效果对比。'},
+{id:5,title:'雪场vlog：和雪友滑到关门才走',platform:'小红书',author:'@雪季不打烊',views:'320万',likes:'25.6万',color:'#7B68EE',emoji:'🌨️',
+analysis:'陪伴感vlog天然治愈+社交属性强+雪场氛围画面即封面素材，适合做系列连载',
+adaptation:'【滑雪二创】一天的雪场生活：早场第一趟→中午雪具厅热身→下午追粉雪→傍晚夕阳滑行。用时间轴串起，配舒缓音乐。文案：「雪场的快乐，是滑到腿软才懂的」。拍摄：手机手持跟拍+无人机雪道大景。'},
+{id:6,title:'滑雪体能训练：在家练核心和腿力',platform:'抖音',author:'@健身教练大刘',views:'450万',likes:'32.8万',color:'#FF6347',emoji:'💪',
+analysis:'身材变化天然视觉冲击+第X天系列完播率极高+前后对比照即最佳封面，健身+滑雪跨界受众广',
+adaptation:'【滑雪二创】30天滑雪体能训练计划：从气喘吁吁到轻松滑全天。每天一个核心+腿部训练动作（波比跳/深蹲/平板支撑），第1天vs第30天雪场体能对比。文案：「先练好身体，再去征服雪山」。拍摄：固定机位记录训练+雪场滑行对比。'},
+{id:7,title:'滑雪穿搭：雪场最靓的仔怎么穿',platform:'小红书',author:'@雪地时尚控',views:'890万',likes:'67.3万',color:'#DC143C',emoji:'🧥',
+analysis:'颜值穿搭类受众极广+种草属性强+雪场大片即天然封面，女性用户占比高转化好',
+adaptation:'【滑雪二创】雪场穿搭三套：甜酷风/机能风/纯色高级风。每套标注单品和配色逻辑，结尾放雪场实穿大片。文案：「滑雪三分钟，拍照两小时」。拍摄：雪场逆光人像+服装细节特写。'},
+{id:8,title:'北海道粉雪之旅：滑进童话里',platform:'B站',author:'@旅人小鹿',views:'189万',likes:'14.2万',color:'#FFD700',emoji:'🏔️',
+analysis:'旅行+滑雪双重流量+异国雪景猎奇+攻略属性带来高收藏，长视频完播稳',
+adaptation:'【滑雪二创】滑雪旅行vlog：行前准备→雪场选择→每日滑行路线→美食住宿。穿插实用攻略字幕。文案：「这趟粉雪，值得飞半个球」。拍摄：运动相机第一视角滑行+风景空镜。'},
+{id:9,title:'双板平行式教学：刹车与转弯一次说清',platform:'抖音',author:'@双板老王',views:'278万',likes:'21.0万',color:'#32ADE6',emoji:'🎯',
+analysis:'刚需教学+痛点明确（刹车是新手最大恐惧）+步骤化讲解收藏率高',
+adaptation:'【滑雪二创】「不敢刹车？3个练习就够了」：犁式减速→半犁式→平行式。每步给练习场地建议和常见失误。拍摄：正面示范+脚下特写慢放。'},
+{id:10,title:'滑雪摄影：GoPro第一视角怎么拍出大片',platform:'小红书',author:'@雪镜导演',views:'167万',likes:'13.4万',color:'#5856D6',emoji:'🎥',
+analysis:'工具教学类高收藏+降低拍摄门槛吸引新手+成片展示即钩子，摄影滑雪跨界',
+adaptation:'【滑雪二创】手机/运动相机滑雪拍摄指南：机位（头盔/胸前/雪杖）、参数、运镜节奏。放对比成片。文案：「不用无人机也能拍出雪道大片」。拍摄：分屏演示前后对比。'},
+{id:11,title:'滑雪翻车名场面：最后一个绝了',platform:'抖音',author:'@雪场名场面',views:'512万',likes:'40.1万',color:'#FF2D55',emoji:'😂',
+analysis:'名场面合集天然高传播+情绪过山车+适合转发艾特雪友，搞笑赛道裂变强',
+adaptation:'【滑雪二创】「雪场迷惑行为大赏」：各种翻车+社死瞬间，结尾放一个神仙操作反转。配魔性BGM和音效。文案：「看完记得@你那个总摔的朋友」。拍摄：收集雪友授权片段+关键帧慢放。'},
+{id:12,title:'冬奥冠军同款动作，我的练习日常',platform:'B站',author:'@追梦小将',views:'203万',likes:'16.8万',color:'#34C759',emoji:'🥇',
+analysis:'冠军光环自带流量+励志成长叙事+普通人的坚持引发共鸣，正能量内容易上热门',
+adaptation:'【滑雪二创】「模仿冠军动作第N天」：选一个冠军标志性动作，记录从笨拙到像样的练习。文案：「冠军也是练出来的」。拍摄：对照冠军视频分屏+自己练习慢放。'}
 ];
 
 function renderVideos(area){
   var vs=getVideoState();var t=td();
-  // Filter only playable videos (those with embedUrl)
-  var playable=VIDEOS.filter(function(v){return v.embedUrl&&v.embedUrl.length>0});
+  // Static library: all curated sports/skiing clips (no playback)
+  var playable=VIDEOS;
   if(vs.lastUpdate!==t){
     var seenIds=vs.seenIds||[];var sevenDaysAgo=new Date();sevenDaysAgo.setDate(sevenDaysAgo.getDate()-7);
     var recentSeen=seenIds.filter(function(s){return new Date(s.date)>sevenDaysAgo}).map(function(s){return s.id});
@@ -1083,19 +1086,77 @@ function refreshVideos(){var vs=getVideoState();vs.lastUpdate='';vs.dailyVideos=
 function switchVTab(tab,btn){
   document.querySelectorAll('#contentArea .tab-item').forEach(function(t){t.classList.remove('active')});
   btn.classList.add('active');
-  var vs=getVideoState();var dv=vs.dailyVideos||VIDEOS.filter(function(v){return v.embedUrl}).slice(0,4);
+  var vs=getVideoState();var dv=vs.dailyVideos||VIDEOS.slice(0,4);
   renderVideoCards(tab,dv);
+}
+function videoCover(v){
+  if(v.cover){
+    return '<img src="'+v.cover+'" style="width:100%;height:180px;object-fit:cover;border-radius:var(--radius) var(--radius) 0 0" loading="lazy">';
+  }
+  return '<div style="width:100%;height:180px;background:linear-gradient(135deg,'+v.color+','+v.color+'99);display:flex;align-items:center;justify-content:center;font-size:64px;border-radius:var(--radius) var(--radius) 0 0;position:relative"><span>'+v.emoji+'</span><span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,.45);color:#fff;font-size:10px;padding:2px 6px;border-radius:8px">'+v.platform+'</span></div>';
 }
 function renderVideoCards(tab,dv){
   var el=document.getElementById('videoList');if(!el)return;var h='';
   dv.forEach(function(v){
     if(tab==='ski'){
-      h+='<div class="card" style="border-left:3px solid #007aff"><div class="card-title">🎿 '+v.emoji+' 基于「'+v.title+'」的二创方案</div><div style="font-size:13px;line-height:1.7;color:var(--text2);margin-top:6px">'+v.adaptation+'</div></div>';
+      h+='<div class="card" style="border-left:3px solid #007aff"><div class="card-title">🎿 '+v.emoji+' 基于「'+v.title+'」的滑雪二创方案</div><div style="font-size:13px;line-height:1.7;color:var(--text2);margin-top:6px">'+v.adaptation+'</div></div>';
     }else{
-      h+='<div class="video-card"><div class="video-player-inline"><iframe src="'+v.embedUrl+'" style="width:100%;height:200px;border:none" allow="autoplay;encrypted-media" allowfullscreen loading="lazy"></iframe></div><div class="video-info"><h4>'+v.title+'</h4><div class="video-stat">'+v.platform+' · '+v.author+' · 👁 '+v.views+' · ❤ '+v.likes+'</div></div></div>';
+      h+='<div class="video-card"><div class="video-cover">'+videoCover(v)+'</div><div class="video-info"><h4>'+v.title+'</h4><div class="video-stat">'+v.platform+' · '+v.author+' · 👁 '+v.views+' · ❤ '+v.likes+'</div>'+(v.analysis?'<div style="font-size:12px;line-height:1.6;color:var(--text2);margin-top:6px"><b style="color:var(--text1)">爆款分析：</b>'+v.analysis+'</div>':'')+'</div></div>';
     }
   });
   el.innerHTML=h;
+}
+
+// ============ EXERCISE MET DATABASE (calorie auto-calc) ============
+var DEFAULT_WEIGHT = 60; // kg 标准体重
+function getWeight(){ var w = parseInt(localStorage.getItem('wb5_weight')||'',10); return (w>0)?w:DEFAULT_WEIGHT; }
+function setWeight(w){ try{ if(w>0) localStorage.setItem('wb5_weight', String(w)); }catch(e){} }
+// 运动名称关键字 → MET 值（参考《体力活动能量消耗 Compendium》），按特异性排序
+var EX_MET = [
+  {k:['跑步','夜跑','慢跑','jog','run'], met:7.0},
+  {k:['快跑','冲刺跑'], met:11.5},
+  {k:['健走','快走','暴走'], met:4.8},
+  {k:['步行','散步','走路'], met:3.5},
+  {k:['羽毛球'], met:5.5},
+  {k:['篮球'], met:6.5},
+  {k:['足球'], met:7.0},
+  {k:['排球'], met:4.0},
+  {k:['网球'], met:7.0},
+  {k:['乒乓','乒乓球'], met:4.0},
+  {k:['游泳'], met:6.0},
+  {k:['骑行','骑车','自行车','动感单车'], met:6.0},
+  {k:['跳绳'], met:11.0},
+  {k:['瑜伽','青蛙趴','拉伸','普拉提'], met:2.5},
+  {k:['高位下拉','坐姿划船'], met:5.0},
+  {k:['罗马尼亚硬拉','硬拉','深蹲','腿举','臀桥','箭步蹲'], met:6.0},
+  {k:['卧推','推举','肩推','飞鸟'], met:3.5},
+  {k:['平板支撑','卷腹','仰卧起坐','俄罗斯转体'], met:3.5},
+  {k:['波比跳','开合跳','高抬腿','登山跑'], met:8.0},
+  {k:['爬山','登山','爬楼','楼梯机'], met:7.0},
+  {k:['椭圆机'], met:5.0},
+  {k:['划船','赛艇'], met:7.0},
+  {k:['健身','力量','器械','撸铁','抗阻','训练'], met:6.0},
+  {k:['舞蹈','尊巴','zumba'], met:5.0},
+  {k:['hiit','间歇','insanity'], met:8.0},
+  {k:['太极'], met:3.0},
+  {k:['有氧','心肺'], met:6.0},
+  {k:['滑雪','单板','双板','雪场'], met:7.0},
+  {k:['滑冰','轮滑','滑旱冰'], met:7.0},
+  {k:['攀岩','抱石'], met:7.5},
+  {k:['搏击','拳击','泰拳','散打'], met:7.5}
+];
+function getMET(name){
+  var n=(name||'').toLowerCase();
+  for(var i=0;i<EX_MET.length;i++){
+    for(var j=0;j<EX_MET[i].k.length;j++){
+      if(n.indexOf(EX_MET[i].k[j].toLowerCase())>-1) return EX_MET[i].met;
+    }
+  }
+  return 5.0;
+}
+function calcCal(name, mins){
+  var w=getWeight(); var met=getMET(name);
+  return Math.round(met * w * (mins/60) * 10)/10;
 }
 
 // ============ FITNESS MODULE (fixed swipe delete + upload persistence) ============
@@ -1117,9 +1178,10 @@ function renderFTabContent(tab,log,st){
   var el=document.getElementById('fitnessContent');if(!el)return;
   if(tab==='today'){
     el.innerHTML='<div class="card"><div class="card-title">💪 今日运动记录 <span style="font-size:11px;color:var(--text2);font-weight:400">← 左滑删除</span></div>'+
-      (log.length>0?'<div style="background:rgba(52,199,89,.08);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px"><span style="font-size:13px;color:var(--success);font-weight:600">✅ 已打卡 · 共 '+log.reduce(function(s,e){return s+e.duration},0)+'分钟</span></div>':'')+
+      (log.length>0?'<div style="background:rgba(52,199,89,.08);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px"><span style="font-size:13px;color:var(--success);font-weight:600">✅ 已打卡 · 共 '+log.reduce(function(s,e){return s+e.duration},0)+'分钟 · 🔥 '+log.reduce(function(s,e){return s+(e.cal!=null?e.cal:calcCal(e.name,e.duration))},0)+' kcal</span></div>':'')+
       '<div id="todayExList">'+renderExList(log)+'</div>'+
       '<div style="display:flex;gap:8px;margin-top:10px"><input class="input" placeholder="运动名称" id="exName" style="flex:1"><input class="input" placeholder="分钟" id="exDuration" style="width:70px;text-align:center" type="number" value="15"></div>'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--text2)">体重<input class="input" id="exWeight" type="number" value="'+getWeight()+'" style="width:56px;text-align:center;padding:4px">kg（自动算卡路里）</div>'+
       '<button class="btn btn-primary btn-block" style="margin-top:8px" onclick="logEx()">➕ 添加运动</button></div>';
     bindSwipeEvents();
   }else{
@@ -1134,7 +1196,12 @@ function renderFTabContent(tab,log,st){
 }
 function renderExList(log){
   if(log.length===0)return'<div style="font-size:12px;color:var(--text2);text-align:center;padding:8px">暂无今日运动记录</div>';
-  return log.map(function(e,i){return'<div class="swipe-item" data-exidx="'+i+'"><div class="swipe-item-delete" onclick="rmEx('+i+')">删除</div><div class="swipe-item-inner"><div style="display:flex;align-items:center;gap:8px;width:100%"><span style="font-size:16px">🏃</span><span style="flex:1">'+e.name+'</span><span style="color:var(--text2);font-size:12px">'+e.duration+'分钟</span></div></div></div>'}).join('');
+  return log.map(function(e,i){var cal=(e.cal!=null)?e.cal:calcCal(e.name,e.duration);return'<div class="swipe-item" data-exidx="'+i+'"><div class="swipe-item-delete" onclick="rmEx('+i+')">删除</div><div class="swipe-item-inner"><div style="display:flex;align-items:center;gap:8px;width:100%"><span style="font-size:16px">🏃</span><span style="flex:1">'+e.name+'</span><span style="color:var(--text2);font-size:12px">'+e.duration+'分钟</span><span style="color:#ff9500;font-size:12px;font-weight:600">🔥 '+cal+' kcal</span></div></div></div>'}).join('');
+}
+function refreshFitnessTab(tab){
+  var st=ld('fitness',{exercises:[],custom:[]});
+  var log=st.exercises.filter(function(e){return e.date===td()});
+  renderFTabContent(tab, log, st);
 }
 function renderCustomExList2(cl){
   if(!cl||cl.length===0)return'<div class="empty-state"><div class="empty-icon">📷</div><p>还没有上传跟练动作</p><p style="font-size:11px">拍照上传你的训练动作吧</p></div>';
@@ -1174,14 +1241,16 @@ document.addEventListener('click',function(e){
 function logEx(){
   var n=document.getElementById('exName').value.trim();var d=parseInt(document.getElementById('exDuration').value)||0;
   if(!n||!d){toast('请填写名称和时长');return}
-  var st=ld('fitness',{exercises:[],custom:[]});st.exercises.push({name:n,duration:d,date:td()});sv('fitness',st);
-  document.getElementById('exName').value='';renderFitness(document.getElementById('contentArea'));toast('已添加');
+  var w=parseInt((document.getElementById('exWeight')?document.getElementById('exWeight').value:'0'),10)||getWeight();setWeight(w);
+  var cal=calcCal(n,d);
+  var st=ld('fitness',{exercises:[],custom:[]});st.exercises.push({name:n,duration:d,date:td(),cal:cal});sv('fitness',st);flushCloud();
+  document.getElementById('exName').value='';renderFitness(document.getElementById('contentArea'));toast('已添加 · 🔥'+cal+' kcal');
 }
 function rmEx(i){
   var st=ld('fitness',{exercises:[],custom:[]});var t=td();
   var todayEx=st.exercises.filter(function(e){return e.date===t});
   if(todayEx[i]){var gi=st.exercises.indexOf(todayEx[i]);if(gi>-1)st.exercises.splice(gi,1)}
-  sv('fitness',st);renderFitness(document.getElementById('contentArea'));toast('已删除');
+  sv('fitness',st);flushCloud();refreshFitnessTab('today');toast('已删除');
 }
 function uploadExPhoto(){
   document.getElementById('cameraInput').click();document.getElementById('cameraInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,800,0.6,function(comp){var img=document.getElementById('exPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
@@ -1206,7 +1275,7 @@ function saveEx(){
     toast('保存失败: '+(e.message||'存储空间不足'));
   }
 }
-function rmCEx(i){showConfirm('删除动作','确定要删除这个跟练动作吗？',function(){var st=ld('fitness',{exercises:[],custom:[]});if(st.custom)st.custom.splice(i,1);sv('fitness',st);renderFitness(document.getElementById('contentArea'));toast('已删除')})}
+function rmCEx(i){showConfirm('删除动作','确定要删除这个跟练动作吗？',function(){var st=ld('fitness',{exercises:[],custom:[]});if(st.custom)st.custom.splice(i,1);sv('fitness',st);flushCloud();refreshFitnessTab('uploaded');toast('已删除')})}
 
 // ============ CALORIE MODULE (expanded DB + combo parsing + swipe delete) ============
 const FOOD_DB = [
@@ -1525,6 +1594,7 @@ function autoClassify(text){
 }
 
 function renderThoughts(area){
+  window._thoughtFilter='全部';
   var st=ld('thoughts',{notes:[]});
   area.innerHTML='<div class="card"><div class="card-title">💭 灵感笔记</div><textarea class="input textarea" id="thoughtInput" placeholder="有什么想法？写下来..."></textarea><div style="margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button class="btn btn-outline btn-sm" onclick="uploadThoughtPhoto()">📷 添加图片</button><button class="btn btn-primary btn-sm" onclick="saveThought()">✨ 记录</button></div><img id="thoughtPhotoPreview" class="upload-preview" style="display:none;margin-top:8px"><div class="category-picker" id="thoughtCatPicker"><span style="font-size:11px;color:var(--text2);margin-right:4px">分类:</span>'+renderCatPicker('')+'</div><div style="font-size:10px;color:var(--text2);margin-top:2px">AI将根据内容自动匹配分类，也可手动选择</div></div><div class="thoughts-filter" id="thoughtsFilter">'+renderThoughtFilter()+'</div><div id="thoughtsList"></div>';
   renderThoughtsList(st);
@@ -1543,6 +1613,7 @@ function renderThoughtFilter(){
   return '<button class="filter-chip active" onclick="filterThoughts(\'全部\',this)">全部</button>'+THOUGHT_CATS.map(function(c){return'<button class="filter-chip" onclick="filterThoughts(\''+c+'\',this)">'+c+'</button>'}).join('');
 }
 function filterThoughts(cat,btn){
+  window._thoughtFilter=cat;
   document.querySelectorAll('#thoughtsFilter .filter-chip').forEach(function(b){b.classList.remove('active')});
   btn.classList.add('active');
   var st=ld('thoughts',{notes:[]});
@@ -1581,7 +1652,7 @@ function renderThoughtsList(st,filterCat){
     return'<div class="'+cls+'" style="margin-bottom:0">'+imgHTML+'<button class="tc-delete" onclick="rmThought('+originalIdx+')">✕</button><div class="tc-body" style="padding:10px"><div class="tc-text" style="font-size:13px">'+n.text+'</div><div class="tc-meta"><span style="font-size:9px">'+new Date(n.time).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span><span style="display:flex;align-items:center;gap:4px">'+catTag+aiLabel+'</span></div></div></div>';
   }).join('')+'</div>';
 }
-function rmThought(i){showConfirm('删除笔记','确定要删除这条笔记吗？',function(){var st=ld('thoughts',{notes:[]});if(i>=0&&i<st.notes.length)st.notes.splice(i,1);sv('thoughts',st);renderThoughts(document.getElementById('contentArea'));toast('已删除')})}
+function rmThought(i){showConfirm('删除笔记','确定要删除这条笔记吗？',function(){var st=ld('thoughts',{notes:[]});if(i>=0&&i<st.notes.length)st.notes.splice(i,1);sv('thoughts',st);flushCloud();renderThoughtsList(st, window._thoughtFilter||'全部');toast('已删除')})}
 
 // ============ IMAGE PREVIEW ============
 function previewImg(src){
@@ -1647,7 +1718,7 @@ try {
       try { updateSyncBadge('online'); } catch(e) {}
       try { document.getElementById('syncRefreshBtn').style.display = ''; } catch(e) {}
       GistSync.load().then(function(cloudData) {
-        if (cloudData) loadCloudData(cloudData);
+        if (cloudData) mergeCloud(cloudData);
       }).catch(function() {
         try { updateSyncBadge('offline'); } catch(e) {}
       });
