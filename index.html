@@ -73,38 +73,7 @@ body{
 select.input{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' fill='none' stroke='%2386868b' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
 .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;padding:10px 18px;border-radius:18px;font-size:12px;font-weight:500;z-index:2000;animation:toastIn .25s ease;pointer-events:none;max-width:80vw;text-align:center}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-/* OSTA Exam styles */
-.osta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:auto;min-height:280px;max-width:360px;margin:0 auto}
-.osta-block{border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:pointer;transition:all .15s;box-shadow:var(--card-shadow);position:relative;overflow:hidden}
-.osta-block:active{transform:scale(.97)}
-.osta-start{background:linear-gradient(135deg,#007AFF,#0051d5);color:#fff;grid-row:span 2}
-.osta-start .osta-icon{font-size:40px;margin-bottom:6px}
-.osta-start .osta-label{font-size:16px;font-weight:700}
-.osta-start .osta-sub{font-size:10px;opacity:.8;margin-top:2px}
-.osta-wrong{background:linear-gradient(135deg,#FF9500,#FF6B00);color:#fff}
-.osta-wrong .osta-icon{font-size:28px;margin-bottom:4px}
-.osta-wrong .osta-label{font-size:13px;font-weight:600}
-.osta-bank{background:linear-gradient(135deg,#34C759,#28a745);color:#fff}
-.osta-bank .osta-icon{font-size:28px;margin-bottom:4px}
-.osta-bank .osta-label{font-size:13px;font-weight:600}
-.osta-badge-count{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.25);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;backdrop-filter:blur(6px)}
-.osta-question{background:var(--card-bg);border-radius:var(--radius-lg);padding:16px;margin-bottom:12px;box-shadow:var(--card-shadow)}
-.osta-q-text{font-size:15px;font-weight:600;line-height:1.6;margin-bottom:12px}
-.osta-options .osta-opt{display:flex;align-items:center;gap:10px;padding:10px 14px;border:2px solid #e5e5ea;border-radius:var(--radius-sm);margin-bottom:8px;cursor:pointer;transition:all .15s;font-size:14px}
-.osta-options .osta-opt:active{background:rgba(0,122,255,.05)}
-.osta-options .osta-opt.selected{border-color:var(--accent);background:rgba(0,122,255,.05)}
-.osta-options .osta-opt.correct{border-color:var(--success);background:rgba(52,199,89,.1)}
-.osta-options .osta-opt.wrong{border-color:var(--danger);background:rgba(255,59,48,.1)}
-.osta-opt-letter{width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;background:#f2f2f7}
-.osta-opt.selected .osta-opt-letter{background:var(--accent);color:#fff}
-.osta-opt.correct .osta-opt-letter{background:var(--success);color:#fff}
-.osta-opt.wrong .osta-opt-letter{background:var(--danger);color:#fff}
-.osta-judge{display:flex;gap:12px;margin-top:8px}
-.osta-judge .osta-opt{flex:1;justify-content:center;padding:12px}
-.osta-score-display{text-align:center;padding:30px 20px}
-.osta-score-num{font-size:48px;font-weight:700;color:var(--accent)}
-.osta-progress-bar{height:4px;background:#e5e5ea;border-radius:2px;overflow:hidden;margin-bottom:12px}
-.osta-progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .2s}
+
 /* English */
 .en-passage{font-size:15px;line-height:2;padding:12px;border-radius:var(--radius-sm);transition:background .15s}
 .en-passage:active{background:rgba(0,122,255,.05)}
@@ -238,8 +207,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
       <div class="avatar-overlay">更换</div>
     </div>
     <ul class="nav-list">
-      <li class="nav-item active" data-page="osta"><span class="nav-icon">📝</span><span class="nav-label">考证</span></li>
-      <li class="nav-item" data-page="english"><span class="nav-icon">🗣️</span><span class="nav-label">英语</span></li>
+      <li class="nav-item active" data-page="english"><span class="nav-icon">🗣️</span><span class="nav-label">英语</span></li>
       <li class="nav-item" data-page="videos"><span class="nav-icon">🔥</span><span class="nav-label">视频</span></li>
       <li class="nav-item" data-page="fitness"><span class="nav-icon">💪</span><span class="nav-label">健身</span></li>
       <li class="nav-item" data-page="calorie"><span class="nav-icon">🍽️</span><span class="nav-label">热量</span></li>
@@ -248,8 +216,8 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   </aside>
   <main class="main">
     <header class="header">
-      <h1 id="pageTitle">OSTA餐厅服务员考证</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v12</span>
+      <h1 id="pageTitle">英语口语练习</h1>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v13</span>
       <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
       <span style="flex:1"></span>
       <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
@@ -289,6 +257,14 @@ setTimeout(function(){
 },5000);
 // If other scripts loaded, cancel this failsafe
 window._failsafeClear=function(){var ls=document.getElementById('loadingScreen');if(ls)ls.remove()};
+// Self-heal: if a newer version is deployed, reload once
+setTimeout(function(){
+  try{
+    fetch('./version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(v){
+      if(v&&v.version&&String(v.version)!=='13'){location.reload(true);}
+    }).catch(function(){});
+  }catch(e){}
+},2500);
 </script>
 
 <!-- Cloud Sync Settings Panel -->
@@ -318,16 +294,7 @@ window._failsafeClear=function(){var ls=document.getElementById('loadingScreen')
   </div>
 </div>
 
-<script>
-// Dynamic osta.js loading — won't block page if 404/cached
-(function(){
-  var s=document.createElement('script');
-  s.src='osta.js?v=12';
-  s.onerror=function(){console.warn('[Init] osta.js failed to load, using fallback');window._ostaLoaded=false;};
-  s.onload=function(){window._ostaLoaded=true;};
-  document.head.appendChild(s);
-})();
-</script>
+
 <script>
 // ============ GITHUB GIST CLOUD SYNC LAYER ============
 // iOS Safari and PWA home screen have COMPLETELY SEPARATE localStorage/SW instances.
@@ -548,8 +515,8 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '12';
-var SYNC_KEYS = ['fitness','thoughts','osta_wrong','osta_progress','diet','en_done','en_state','video_state'];
+var APP_VERSION = '13';
+var SYNC_KEYS = ['fitness','thoughts','calorie','english','videos','avatar'];
 
 // Version migration: if old version, clear cache on next SW update
 try {
@@ -646,10 +613,37 @@ function forceCloudPush() {
   }, 2000);
 }
 
+// ============ REAL-TIME CLOUD SYNC (periodic silent pull) ============
+var _cloudSyncTimer = null;
+function startCloudSync() {
+  if (_cloudSyncTimer) return;
+  if (!GistSync.isReady()) return;
+  _cloudSyncTimer = setInterval(function() {
+    if (!GistSync.isReady()) return;
+    GistSync.load().then(function(data) {
+      if (!data) return;
+      var changed = false;
+      SYNC_KEYS.forEach(function(k) {
+        if (!data[k]) return;
+        var local = null;
+        try { local = JSON.parse(localStorage.getItem('wb5_' + k) || 'null'); } catch(e) {}
+        if (JSON.stringify(local) !== JSON.stringify(data[k])) {
+          try { localStorage.setItem('wb5_' + k, JSON.stringify(data[k])); changed = true; } catch(e) {}
+        }
+      });
+      if (changed) {
+        updateSyncBadge('online');
+        var cur = document.querySelector('.nav-item.active');
+        if (cur) cur.click();
+      }
+    }).catch(function() {});
+  }, 15000);
+}
+
 // ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=12').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=13').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
@@ -677,7 +671,7 @@ if ('serviceWorker' in navigator) {
     if (event.data && event.data.type === 'sw-updated') {
       console.log('[SW] Updated to', event.data.version);
       // If page version is older, force reload
-      if (event.data.version !== APP_VERSION) {
+      if (event.data.version !== ('v'+APP_VERSION)) {
         showUpdateBanner(null);
       }
     }
@@ -849,141 +843,6 @@ function triggerAvatarUpload(){
   };
 }
 
-// OSTA exam data loaded from external osta.js
-// OSTA_SINGLE and OSTA_JUDGE defined in osta.js
-
-// ============ OSTA EXAM MODULE ============
-function getOstaState(){return ld('osta',{wrongQuestions:[],examHistory:[]})}
-function saveOstaState(s){sv('osta',s)}
-
-function renderOsta(area){
-  var st=getOstaState();var wrongCount=st.wrongQuestions.length;
-  var sc=0,jc=0;
-  try{sc=OSTA_SINGLE.length}catch(e){}
-  try{jc=OSTA_JUDGE.length}catch(e){}
-  area.innerHTML='<div class="osta-grid" style="margin-top:6px">'+
-    '<div class="osta-block osta-start" onclick="startExam()"><div class="osta-icon">📝</div><div class="osta-label">开始考试</div><div class="osta-sub">随机组卷 100题</div></div>'+
-    '<div class="osta-block osta-wrong" onclick="showWrongQuestions()"><div class="osta-icon">❌</div><div class="osta-label">错题记录</div>'+(wrongCount>0?'<div class="osta-badge-count">'+wrongCount+'</div>':'')+'</div>'+
-    '<div class="osta-block osta-bank" onclick="showQuestionBank()"><div class="osta-icon">📚</div><div class="osta-label">题库资料</div><div style="font-size:10px;opacity:.8;margin-top:2px">'+sc+'单选 + '+jc+'判断</div></div>'+
-    '</div>'+
-    (st.examHistory.length>0?'<div class="card" style="margin-top:14px"><div class="card-title">📊 最近考试记录</div>'+st.examHistory.slice(-5).reverse().map(function(h){return'<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.04)"><span>'+h.date+'</span><span style="color:'+(h.score>=60?'var(--success)':'var(--danger)')+';font-weight:600">'+h.score+'分</span><span style="color:var(--text2)">'+h.correct+'/'+h.total+'题</span></div>'}).join('')+'</div>':'');
-}
-
-var _exam={questions:[],answers:{},currentIdx:0,startTime:0};
-
-function startExam(){
-  try {
-    var singles=(OSTA_SINGLE||[]).slice().sort(function(){return Math.random()-.5}).slice(0,80);
-    var judges=(OSTA_JUDGE||[]).slice().sort(function(){return Math.random()-.5}).slice(0,20);
-    _exam.questions=singles.concat(judges);
-    _exam.answers={};_exam.currentIdx=0;_exam.startTime=Date.now();
-    renderExamQuestion();
-  } catch(e) { toast('题库加载失败，请刷新页面'); }
-}
-
-function renderExamQuestion(){
-  var area=document.getElementById('contentArea');
-  var q=_exam.questions[_exam.currentIdx];
-  var total=_exam.questions.length;
-  var answered=Object.keys(_exam.answers).length;
-  var pct=Math.round(answered/total*100);
-  var isJudge=q.c===true||q.c===false;
-  
-  area.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="exitExam()">← 退出</button><span style="flex:1;font-size:13px;font-weight:600">第 '+(_exam.currentIdx+1)+' / '+total+' 题</span><span style="font-size:11px;color:var(--text2)">'+answered+'题已答</span></div><div class="osta-progress-bar"><div class="osta-progress-fill" style="width:'+pct+'%"></div></div>';
-  
-  if(isJudge){
-    area.innerHTML+='<div class="osta-question"><div class="osta-q-text">'+(_exam.currentIdx<80?'【单选题】':'【判断题】')+' '+q.q+'</div><div class="osta-options"><div class="osta-judge"><div class="osta-opt'+(_exam.answers[_exam.currentIdx]===true?' selected':'')+'" onclick="selectAnswer('+(_exam.currentIdx<80?'\x27'+q.a[0]+'\x27':'true')+','+(_exam.currentIdx<80?'0':'true')+',this)"><span class="osta-opt-letter">'+(_exam.answers[_exam.currentIdx]===true?'✓':'A')+'</span><span>'+(_exam.currentIdx<80?q.a[0]:'正确')+'</span></div><div class="osta-opt'+(_exam.answers[_exam.currentIdx]===false?' selected':'')+'" onclick="selectAnswer('+(_exam.currentIdx<80?'\x27'+q.a[1]+'\x27':'false')+','+(_exam.currentIdx<80?'1':'false')+',this)"><span class="osta-opt-letter">'+(_exam.answers[_exam.currentIdx]===false?'✗':'B')+'</span><span>'+(_exam.currentIdx<80?q.a[1]:'错误')+'</span></div></div></div>';
-  }else{
-    area.innerHTML+='<div class="osta-question"><div class="osta-q-text">【单选题】 '+q.q+'</div><div class="osta-options">'+q.a.map(function(opt,i){var sel=_exam.answers[_exam.currentIdx]!==undefined&&_exam.answers[_exam.currentIdx].idx===i;return'<div class="osta-opt'+(sel?' selected':'')+'" onclick="selectAnswer(\x27'+opt.replace(/'/g,'')+'\x27,'+i+',this)"><span class="osta-opt-letter">'+String.fromCharCode(65+i)+'</span><span>'+opt+'</span></div>'}).join('')+'</div></div>';
-  }
-  
-  area.innerHTML+='<div style="display:flex;gap:8px;margin-top:12px">'+(_exam.currentIdx>0?'<button class="btn btn-outline btn-sm" onclick="prevExamQ()">← 上一题</button>':'')+'<button class="btn btn-primary btn-sm" style="flex:1" onclick="nextExamQ()">'+(_exam.currentIdx===total-1?'提交试卷 →':'下一题 →')+'</button></div>';
-  
-  area.innerHTML+='<div style="display:flex;gap:4px;margin-top:14px;flex-wrap:wrap">'+_exam.questions.map(function(qq,i){var answered=_exam.answers[i]!==undefined;return'<div onclick="jumpExamQ('+i+')" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;cursor:pointer;'+(i===_exam.currentIdx?'background:var(--accent);color:#fff':answered?'background:rgba(52,199,89,.15);color:var(--success)':'background:#f2f2f7;color:var(--text2)')+'">'+(i+1)+'</div>'}).join('')+'</div>';
-}
-
-function selectAnswer(value,idx,el){
-  _exam.answers[_exam.currentIdx]={value:value,idx:idx};
-  renderExamQuestion();
-}
-function nextExamQ(){if(_exam.currentIdx<_exam.questions.length-1){_exam.currentIdx++;renderExamQuestion()}else{submitExam()}}
-function prevExamQ(){if(_exam.currentIdx>0){_exam.currentIdx--;renderExamQuestion()}}
-function jumpExamQ(i){_exam.currentIdx=i;renderExamQuestion()}
-function exitExam(){renderOsta(document.getElementById('contentArea'))}
-
-function submitExam(){
-  var correct=0;var wrongQs=[];var total=_exam.questions.length;
-  _exam.questions.forEach(function(q,i){
-    var ans=_exam.answers[i];
-    if(!ans){wrongQs.push(q);return}
-    if(q.c===true||q.c===false){
-      var ansBool=ans.idx===true||ans.value==='true';
-      if(ansBool===q.c)correct++;else wrongQs.push(q);
-    }else{
-      if(ans.idx===q.c)correct++;else wrongQs.push(q);
-    }
-  });
-  var score=Math.round(correct/total*100);
-  var st=getOstaState();
-  st.examHistory.push({date:td()+' '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'}),score:score,correct:correct,total:total});
-  wrongQs.forEach(function(q){
-    var exists=st.wrongQuestions.find(function(w){return w.q===q.q});
-    if(!exists)st.wrongQuestions.push(q);
-  });
-  saveOstaState(st);
-  showExamResult(score,correct,total,wrongQs.length);
-}
-
-function showExamResult(score,correct,total,wrongCount){
-  var area=document.getElementById('contentArea');
-  var passed=score>=60;
-  area.innerHTML='<div class="osta-score-display"><div style="font-size:48px;margin-bottom:8px">'+(passed?'🎉':'😅')+'</div><div class="osta-score-num" style="color:'+(passed?'var(--success)':'var(--danger)')+'">'+score+'分</div><div style="font-size:14px;color:var(--text2);margin-top:8px">'+(passed?'恭喜通过考试':'未通过，请继续努力')+'</div><div style="font-size:12px;color:var(--text2);margin-top:4px">答对 '+correct+'/'+total+' 题 · 错题 '+wrongCount+' 道</div><div style="display:flex;gap:8px;margin-top:20px;justify-content:center"><button class="btn btn-primary" onclick="showWrongQuestions()">查看错题</button><button class="btn btn-outline" onclick="startExam()">再考一次</button><button class="btn btn-outline" onclick="renderOsta(document.getElementById(\'contentArea\'))">返回首页</button></div></div>';
-}
-
-function showWrongQuestions(){
-  var st=getOstaState();var qs=st.wrongQuestions;
-  var area=document.getElementById('contentArea');
-  if(qs.length===0){area.innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p>暂无错题记录</p><p style="font-size:11px">完成考试后，答错的题目会自动归档到这里</p></div><button class="btn btn-outline btn-block" style="margin-top:12px" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button>';return}
-  area.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button><span style="flex:1;font-size:14px;font-weight:600">❌ 错题记录 ('+qs.length+'题)</span><button class="btn btn-danger btn-sm" onclick="clearWrongQuestions()">清空</button></div>';
-  qs.forEach(function(q,i){
-    var isJudge=q.c===true||q.c===false;
-    var correctAns=void 0;
-    if(isJudge){correctAns=q.c?'正确':'错误'}else{correctAns=q.a[q.c]}
-    var div=document.createElement('div');div.className='osta-question';
-    div.innerHTML='<div class="osta-q-text">'+(i+1)+'. '+(isJudge?'【判断题】':'【单选题】')+' '+q.q+'</div>';
-    if(isJudge){
-      div.innerHTML+='<div class="osta-options"><div class="osta-judge"><div class="osta-opt correct"><span class="osta-opt-letter">✓</span><span>正确</span></div><div class="osta-opt"><span class="osta-opt-letter">✗</span><span>错误</span></div></div></div>';
-    }else{
-      div.innerHTML+='<div class="osta-options">'+q.a.map(function(opt,j){var cls=j===q.c?'correct':'';return'<div class="osta-opt '+cls+'"><span class="osta-opt-letter">'+String.fromCharCode(65+j)+'</span><span>'+opt+'</span></div>'}).join('')+'</div>';
-    }
-    div.innerHTML+='<div style="margin-top:8px;font-size:12px;color:var(--success);padding:6px 10px;background:rgba(52,199,89,.08);border-radius:8px">✅ 正确答案：'+correctAns+'</div>';
-    area.appendChild(div);
-  });
-  area.innerHTML+='<button class="btn btn-outline btn-block" style="margin-top:12px" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button>';
-}
-function clearWrongQuestions(){showConfirm('清空错题','确定清空所有错题记录吗？',function(){var st=getOstaState();st.wrongQuestions=[];saveOstaState(st);renderOsta(document.getElementById('contentArea'));toast('已清空')})}
-
-function showQuestionBank(){
-  var area=document.getElementById('contentArea');
-  try {
-    var allQs=(OSTA_SINGLE||[]).concat(OSTA_JUDGE||[]);
-    area.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="renderOsta(document.getElementById(\'contentArea\'))">← 返回</button><span style="flex:1;font-size:14px;font-weight:600">📚 题库资料 ('+allQs.length+'题)</span></div>';
-    allQs.forEach(function(q,i){
-    var isJudge=q.c===true||q.c===false;
-    var correctAns=void 0;
-    if(isJudge){correctAns=q.c?'正确':'错误'}else{correctAns=q.a[q.c]}
-    var div=document.createElement('div');div.className='osta-question';
-    div.innerHTML='<div class="osta-q-text">'+(i+1)+'. '+(isJudge?'【判断题】':'【单选题】')+' '+q.q+'</div>';
-    if(isJudge){
-      div.innerHTML+='<div class="osta-options"><div class="osta-judge"><div class="osta-opt'+(q.c?' correct':'')+'"><span class="osta-opt-letter">✓</span><span>正确</span></div><div class="osta-opt'+(!q.c?' correct':'')+'"><span class="osta-opt-letter">✗</span><span>错误</span></div></div></div>';
-    }else{
-      div.innerHTML+='<div class="osta-options">'+q.a.map(function(opt,j){var cls=j===q.c?'correct':'';return'<div class="osta-opt '+cls+'"><span class="osta-opt-letter">'+String.fromCharCode(65+j)+'</span><span>'+opt+'</span></div>'}).join('')+'</div>';
-    }
-    div.innerHTML+='<div style="margin-top:6px;font-size:11px;color:var(--text2)">正确答案：'+correctAns+'</div>';
-    area.appendChild(div);
-  });
-  } catch(e) { area.innerHTML='<div style="padding:30px;text-align:center;color:#ff3b30">题库数据加载失败，请刷新页面</div>'; }
-}
 
 
 // ============ ENGLISH MODULE ============
@@ -1091,7 +950,7 @@ function renderEnglish(area){
 }
 
 function refreshEnIcon(btn){if(btn){btn.style.animation='spin .6s ease';setTimeout(function(){btn.style.animation=''},600)}refreshEn();}
-function refreshEn(){var es=getEnState();es.seenIds=es.seenIds||[];var passages=pickEnPassages();_enPassages=passages;var area=document.getElementById('contentArea');var h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">\U0001f5e3\ufe0f \u6bcf\u65e5\u82f1\u8bed\u7ec3\u4e60 <span style="font-size:11px;color:var(--text2);font-weight:400">(30\u5929\u53bb\u91cd \u00b7 3\u7bc7)</span></div><button class="btn btn-outline btn-sm" onclick="refreshEn()">\U0001f504 \u5237\u65b0\u7d20\u6750</button></div>';for(var i=0;i<passages.length;i++){var p=passages[i];var catLabel=p.cat==='news'?'<span class="tag tag-purple" style="margin-left:4px">\u56fd\u9645\u65b0\u95fb</span>':'<span class="tag" style="margin-left:4px">\u65e5\u5e38\u53e3\u8bed</span>';h+='<div class="card"><div class="card-title">'+(i+1)+'. '+p.title+catLabel+'</div><div class="en-passage" id="enText'+i+'" onclick="toggleCN('+i+')">'+buildEnTextHTML(p,i)+'</div><div class="en-passage cn-section" id="cnText'+i+'">'+p.cn+'</div>';h+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><button class="btn btn-outline btn-sm" id="btnEnPlay'+i+'" onclick="toggleEnAudio('+i+')">\U0001f50a \u5168\u6587\u6717\u8bfb</button><button class="btn btn-accent btn-sm" id="btnEnRec'+i+'" onclick="startEnRec('+i+')">\U0001f3a4\ufe0f \u8ddf\u8bfb\u6b64\u6bb5</button><span id="enRecStatus'+i+'" style="font-size:11px;color:var(--text2)"></span></div><div id="enScore'+i+'" style="margin-top:8px"></div></div>';}area.innerHTML=h;toast('\u5df2\u52a0\u8f7d\u5168\u65b03\u7bc7\u7d20\u6750');}
+function refreshEn(){var es=getEnState();es.seenIds=es.seenIds||[];var passages=pickEnPassages();_enPassages=passages;var area=document.getElementById('contentArea');var h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">🗣️ \u6bcf\u65e5\u82f1\u8bed\u7ec3\u4e60 <span style="font-size:11px;color:var(--text2);font-weight:400">(30\u5929\u53bb\u91cd \u00b7 3\u7bc7)</span></div><button class="btn btn-outline btn-sm" onclick="refreshEn()">🔄 \u5237\u65b0\u7d20\u6750</button></div>';for(var i=0;i<passages.length;i++){var p=passages[i];var catLabel=p.cat==='news'?'<span class="tag tag-purple" style="margin-left:4px">\u56fd\u9645\u65b0\u95fb</span>':'<span class="tag" style="margin-left:4px">\u65e5\u5e38\u53e3\u8bed</span>';h+='<div class="card"><div class="card-title">'+(i+1)+'. '+p.title+catLabel+'</div><div class="en-passage" id="enText'+i+'" onclick="toggleCN('+i+')">'+buildEnTextHTML(p,i)+'</div><div class="en-passage cn-section" id="cnText'+i+'">'+p.cn+'</div>';h+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center"><button class="btn btn-outline btn-sm" id="btnEnPlay'+i+'" onclick="toggleEnAudio('+i+')">🔊 \u5168\u6587\u6717\u8bfb</button><button class="btn btn-accent btn-sm" id="btnEnRec'+i+'" onclick="startEnRec('+i+')">🎤️ \u8ddf\u8bfb\u6b64\u6bb5</button><span id="enRecStatus'+i+'" style="font-size:11px;color:var(--text2)"></span></div><div id="enScore'+i+'" style="margin-top:8px"></div></div>';}area.innerHTML=h;toast('\u5df2\u52a0\u8f7d\u5168\u65b03\u7bc7\u7d20\u6750');}
 function toggleCN(idx){var el=document.getElementById('cnText'+idx);if(el)el.classList.toggle('show');}
 
 function showWord(e,word){
@@ -1216,7 +1075,7 @@ function renderVideos(area){
     vs.seenIds=seenIds;vs.lastUpdate=t;saveVideoState(vs);
   }
   var dv=vs.dailyVideos||playable.slice(0,4);
-  area.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">\U0001f525 \u7206\u6b3e\u89c6\u9891</div><button class="btn btn-outline btn-sm" onclick="refreshVideos()">\U0001f504 \u5237\u65b0\u89c6\u9891</button></div><div class="tab-bar"><button class="tab-item active" onclick="switchVTab(\x27all\x27,this)">🎬 全部视频</button><button class="tab-item" onclick="switchVTab(\x27ski\x27,this)">🎿 滑雪二创</button></div><div id="videoList"></div>';
+  area.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-size:14px;font-weight:600">\U0001f525 \u7206\u6b3e\u89c6\u9891</div><button class="btn btn-outline btn-sm" onclick="refreshVideos()">🔄 \u5237\u65b0\u89c6\u9891</button></div><div class="tab-bar"><button class="tab-item active" onclick="switchVTab(\x27all\x27,this)">🎬 全部视频</button><button class="tab-item" onclick="switchVTab(\x27ski\x27,this)">🎿 滑雪二创</button></div><div id="videoList"></div>';
   renderVideoCards('all',dv);
 }
 function refreshVideosIcon(btn){if(btn){btn.style.animation='spin .6s ease';setTimeout(function(){btn.style.animation=''},600)}refreshVideos();}
@@ -1244,7 +1103,7 @@ var _swipeItem=null,_swipeOpen=null;
 
 function renderFitness(area){
   var st=ld('fitness',{exercises:[],custom:[]});var t=td();var log=st.exercises.filter(function(e){return e.date===t});
-  area.innerHTML='<div class="tab-bar" style="margin-bottom:12px"><button class="tab-item active" onclick="switchFTab('today',this)">💪 今日运动记录</button><button class="tab-item" onclick="switchFTab('uploaded',this)">📤 已上传跟练动作</button></div><div id="fitnessContent"></div>';
+  area.innerHTML='<div class="tab-bar" style="margin-bottom:12px"><button class="tab-item active" onclick="switchFTab(\'today\',this)">💪 今日运动记录</button><button class="tab-item" onclick="switchFTab(\'uploaded\',this)">📤 已上传跟练动作</button></div><div id="fitnessContent"></div>';
   renderFTabContent('today',log,st);
   window._fitnessLog=log;window._fitnessSt=st;
 }
@@ -1734,13 +1593,12 @@ function closeImgPreview(){document.getElementById('imgPreviewOverlay').classLis
 // ============ NAVIGATION ============
 function switchPage(page){
   document.querySelectorAll('.nav-item').forEach(function(i){i.classList.toggle('active',i.dataset.page===page)});
-  var titles={osta:'OSTA餐厅服务员考证',english:'英语口语练习',videos:'爆款热点视频',fitness:'健身运动打卡',calorie:'吃饭热量计算',thoughts:'灵感笔记'};
+  var titles={english:'英语口语练习',videos:'爆款热点视频',fitness:'健身运动打卡',calorie:'吃饭热量计算',thoughts:'灵感笔记'};
   document.getElementById('pageTitle').textContent=titles[page]||'';
   var area=document.getElementById('contentArea');
   area.scrollTop=0;area.innerHTML='';
   setTimeout(function(){
     try{switch(page){
-      case'osta':renderOsta(area);break;
       case'english':renderEnglish(area);break;
       case'videos':renderVideos(area);break;
       case'fitness':renderFitness(area);break;
@@ -1777,14 +1635,14 @@ function _finishInit() {
 }
 
 try {
-  // Wait for osta.js (max 3s), then proceed regardless
-  var _ostaReady = false;
+  var _inited = false;
   function _doInit() {
-    if (_ostaReady) return;
-    _ostaReady = true;
+    if (_inited) return;
+    _inited = true;
 
     // Init cloud sync (non-blocking)
     try { GistSync.init(); } catch(e) {}
+      startCloudSync();
     if (GistSync.isReady()) {
       try { updateSyncBadge('online'); } catch(e) {}
       try { document.getElementById('syncRefreshBtn').style.display = ''; } catch(e) {}
@@ -1799,20 +1657,13 @@ try {
     setTimeout(function() { checkAppVersion(); }, 2000);
 
     // Render page
-    try { switchPage('osta'); } catch(e) { console.error('switchPage error:', e); }
+    try { switchPage('english'); } catch(e) { console.error('switchPage error:', e); }
 
     // Hide loading screen
     setTimeout(_finishInit, 300);
   }
-  // Wait up to 3s for osta.js, then init anyway
-  var _waitOsta = 0;
-  var _ostaCheck = setInterval(function() {
-    _waitOsta += 100;
-    if (window._ostaLoaded || _waitOsta >= 3000) {
-      clearInterval(_ostaCheck);
-      _doInit();
-    }
-  }, 100);
+    // Initialize immediately (no external script dependency)
+  _doInit();
 } catch(err) {
   clearTimeout(_loadTimeout);
   _finishInit();

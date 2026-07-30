@@ -1,14 +1,14 @@
 {
   "name": "Bice 个人工作台",
   "short_name": "Bice工作台",
-  "description": "OSTA考证、英语口语、爆款视频、健身运动、热量计算、灵感笔记",
-  "start_url": "./?v=12&utm_source=pwa",
+  "description": "英语口语、爆款视频、健身运动、热量计算、灵感笔记",
+  "start_url": "./?v=13&utm_source=pwa",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#1d1d1f",
   "scope": "./",
-  "id": "bice-workbench-v12",
+  "id": "bice-workbench-v13",
   "icons": [
     {
       "src": "icon-192.png",
@@ -23,7 +23,7 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["productivity", "education", "health"],
+  "categories": ["productivity", "health"],
   "lang": "zh-CN",
   "dir": "ltr",
   "prefer_related_applications": false
