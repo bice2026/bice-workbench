@@ -1,23 +1,23 @@
-// Bice Workbench Service Worker v20
+// Bice Workbench Service Worker v21
 // Strategy: NO CACHING — always network-first, cache only as fallback
 // Old caches (v8-v16) deleted on activate
-const CACHE_NAME = 'bice-wb-v20';
-const SW_VERSION = '20';
+const CACHE_NAME = 'bice-wb-v21';
+const SW_VERSION = '21';
 
 // Skip waiting: new SW takes control immediately
 self.addEventListener('install', function(event) {
-  console.log('[SW v20] Installing — skipWaiting enabled');
+  console.log('[SW v21] Installing — skipWaiting enabled');
   self.skipWaiting();
 });
 
 // Activate: DELETE ALL OLD CACHES unconditionally
 self.addEventListener('activate', function(event) {
-  console.log('[SW v20] Activating — clearing all legacy caches');
+  console.log('[SW v21] Activating — clearing all legacy caches');
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
         keys.map(function(k) {
-          console.log('[SW v20] Deleting old cache:', k);
+          console.log('[SW v21] Deleting old cache:', k);
           return caches.delete(k);
         })
       );
@@ -28,7 +28,7 @@ self.addEventListener('activate', function(event) {
       // Notify all clients
       return self.clients.matchAll().then(function(clients) {
         clients.forEach(function(client) {
-          client.postMessage({ type: 'sw-updated', version: 'v20' });
+          client.postMessage({ type: 'sw-updated', version: 'v21' });
         });
       });
     })

@@ -38,7 +38,8 @@ body{
 .sidebar-avatar:active .avatar-overlay{opacity:1}
 .nav-list{list-style:none;display:flex;flex-direction:column;gap:2px;width:100%;padding:0 6px;flex:1}
 .nav-item{display:flex;align-items:center;justify-content:center;padding:10px 0;border-radius:var(--radius-sm);cursor:pointer;transition:background .15s;color:rgba(255,255,255,.5);white-space:nowrap;position:relative;flex-direction:column;gap:3px}
-.nav-item .nav-icon{font-size:20px;line-height:1}
+.nav-item .nav-icon{font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center}
+.nav-svg{width:22px;height:22px;display:block}
 .nav-item .nav-label{font-size:10px;font-weight:500;line-height:1}
 .nav-item:active{background:rgba(255,255,255,.15)}
 .nav-item.active{background:rgba(255,255,255,.18);color:#fff}
@@ -138,8 +139,8 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 .thoughts-filter::-webkit-scrollbar{display:none}
 .thoughts-filter .filter-chip{padding:6px 14px;border-radius:16px;font-size:12px;font-weight:500;white-space:nowrap;cursor:pointer;transition:all .15s;background:rgba(0,0,0,.05);color:var(--text);border:none;font-family:inherit;flex-shrink:0}
 .thoughts-filter .filter-chip.active{background:#1d1d1f;color:#fff}
-.thought-card{border-radius:var(--radius);background:var(--card-bg);box-shadow:var(--card-shadow);margin-bottom:12px;overflow:hidden;position:relative;height:230px;display:flex;flex-direction:column}
-.thought-card .tc-img{width:100%;height:130px;object-fit:cover;flex-shrink:0;cursor:pointer}
+.thought-card{border-radius:var(--radius);background:var(--card-bg);box-shadow:var(--card-shadow);margin-bottom:12px;overflow:hidden;position:relative;height:190px;display:flex;flex-direction:column}
+.thought-card .tc-img{width:100%;height:100px;object-fit:cover;flex-shrink:0;cursor:pointer}
 .thought-card.text-only{background:linear-gradient(135deg,#f8f9fa,#e9ecef);border-left:4px solid var(--accent)}
 .thought-card.text-only .tc-body{padding:18px}
 .thought-card.text-only .tc-text{font-size:15px;line-height:1.8;color:var(--text)}
@@ -218,17 +219,17 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
       <div class="avatar-overlay">更换</div>
     </div>
     <ul class="nav-list">
-      <li class="nav-item active" data-page="english"><span class="nav-icon">🗣️</span><span class="nav-label">英语</span></li>
-      <li class="nav-item" data-page="videos"><span class="nav-icon">🔥</span><span class="nav-label">视频</span></li>
-      <li class="nav-item" data-page="fitness"><span class="nav-icon">💪</span><span class="nav-label">健身</span></li>
-      <li class="nav-item" data-page="calorie"><span class="nav-icon">🍽️</span><span class="nav-label">热量</span></li>
-      <li class="nav-item" data-page="thoughts"><span class="nav-icon">💭</span><span class="nav-label">灵感</span></li>
+      <li class="nav-item active" data-page="english"><span class="nav-icon"><svg viewBox="0 0 24 24" class="nav-svg" fill="#0A84FF"><path d="M12 3C6.7 3 2.5 6.4 2.5 10.6c0 2.4 1.4 4.5 3.6 5.9L5.3 20l3.8-2c1.1.3 2.3.4 2.9.4 5.3 0 9.5-3.4 9.5-7.8S17.3 3 12 3z"/></svg></span><span class="nav-label">英语</span></li>
+      <li class="nav-item" data-page="videos"><span class="nav-icon"><svg viewBox="0 0 24 24" class="nav-svg" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="4" fill="#FF3B30"/><path d="M10 8.8l5.5 3.2-5.5 3.2z" fill="#fff"/></svg></span><span class="nav-label">视频</span></li>
+      <li class="nav-item" data-page="fitness"><span class="nav-icon"><svg viewBox="0 0 24 24" class="nav-svg" fill="#34C759"><rect x="3" y="9" width="2.6" height="6" rx="1.1"/><rect x="6.4" y="10.4" width="2" height="3.2" rx="0.8"/><rect x="9.6" y="10.8" width="4.8" height="2.4" rx="1.2"/><rect x="15.6" y="10.4" width="2" height="3.2" rx="0.8"/><rect x="18.4" y="9" width="2.6" height="6" rx="1.1"/></svg></span><span class="nav-label">健身</span></li>
+      <li class="nav-item" data-page="calorie"><span class="nav-icon"><svg viewBox="0 0 24 24" class="nav-svg" fill="#FF9F0A"><path d="M13 2c.5 2.8-1.5 4-2.5 5.6C9.2 9.6 9.8 11 11 11.4c1.4.5 2.3-.9 2-2.3 2 1.2 3 3.6 3 6 0 3.6-2.7 6.4-6 6.4-3.4 0-6-2.8-6-6.4 0-2.7 1.7-4.7 3-6.3.6 1.3 1.8 1.8 2.8 1.5-.9-1.8.2-4 1.2-5.3C12.3 3.7 12.9 2.7 13 2z"/></svg></span><span class="nav-label">热量</span></li>
+      <li class="nav-item" data-page="thoughts"><span class="nav-icon"><svg viewBox="0 0 24 24" class="nav-svg" fill="#FFD60A"><path d="M12 3a6.2 6.2 0 0 0-3.6 11.2c.5.4.9 1 .9 1.6h5.4c0-.6.4-1.2.9-1.6A6.2 6.2 0 0 0 12 3zM9.6 17.2h4.8V18.5H9.6zM10 19.6h4v1.3h-4z"/></svg></span><span class="nav-label">灵感</span></li>
     </ul>
   </aside>
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">英语口语练习</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v20</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v21</span>
       <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
       <span style="flex:1"></span>
       <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
@@ -530,7 +531,7 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '20';
+var APP_VERSION = '21';
 var SYNC_KEYS = ['fitness','thoughts','calorie','english','videos','avatar'];
 
 // Version migration: if old version, clear cache on next SW update
@@ -659,7 +660,7 @@ function startCloudSync() {
 // ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=20').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=21').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
