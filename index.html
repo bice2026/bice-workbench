@@ -190,24 +190,6 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 .refresh-icon-btn:active{background:rgba(0,0,0,.12);transform:scale(.92)}
 .refresh-icon-btn svg{width:16px;height:16px}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-/* Cloud Sync UI */
-.sync-status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
-.sync-status-dot.online{background:var(--success);box-shadow:0 0 4px var(--success)}
-.sync-status-dot.syncing{background:var(--accent);animation:pulse 1s infinite}
-.sync-status-dot.offline{background:var(--danger)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.sync-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500;cursor:pointer;transition:all .15s}
-.sync-badge.online{background:#e8f5e9;color:#2e7d32}
-.sync-badge.offline{background:#fbe9e7;color:#c62828}
-.sync-badge.syncing{background:#e3f2fd;color:#1565c0}
-.sync-badge:active{transform:scale(.95)}
-.sync-settings-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center;z-index:5000}
-.sync-settings-panel{background:var(--card-bg);border-radius:var(--radius-lg) var(--radius-lg) 0 0;width:100%;max-width:460px;padding:24px 20px max(24px,env(safe-area-inset-bottom)) 20px;max-height:80vh;overflow-y:auto}
-.sync-settings-panel h3{font-size:17px;margin-bottom:16px}
-.sync-settings-panel .field-label{font-size:12px;color:var(--text2);margin-bottom:4px;font-weight:500}
-.sync-settings-panel input[type=password],.sync-settings-panel input[type=text]{width:100%;padding:10px 12px;border:1px solid rgba(0,0,0,.15);border-radius:var(--radius-sm);font-size:13px;font-family:monospace;background:var(--bg2)}
-.sync-settings-panel .hint{font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5}
-.sync-settings-panel .hint a{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -229,10 +211,8 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">英语口语练习</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v21</span>
-      <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
+      <span class="header-date" id="headerDate"></span>      <span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v22</span>
       <span style="flex:1"></span>
-      <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
       <button class="refresh-icon-btn" onclick="exportAllData()" title="导出数据备份" style="margin-right:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
       <button class="refresh-icon-btn" onclick="importAllData()" title="导入数据备份"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>
     </header>
@@ -283,380 +263,17 @@ window._failsafeClear=function(){var ls=document.getElementById('loadingScreen')
 // Version updates are now handled solely by checkAppVersion() with reload guard.
 </script>
 
-<!-- Cloud Sync Settings Panel -->
-<div id="syncSettingsOverlay" class="sync-settings-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
-  <div class="sync-settings-panel" onclick="event.stopPropagation()">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="margin:0">☁️ 云端数据同步</h3>
-      <button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2);padding:4px" onclick="document.getElementById('syncSettingsOverlay').style.display='none'">✕</button>
-    </div>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
-      配置 GitHub Gist 云端存储后，Safari 网页端与手机主屏幕快捷方式将共用同一套数据，任意一端修改内容另一端实时同步。
-    </p>
-    <div style="margin-bottom:14px">
-      <div class="field-label">GitHub Personal Access Token</div>
-      <input type="password" id="syncTokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-      <div class="hint">Token 需要 <b>gist</b> 权限。<a href="https://github.com/settings/tokens/new?scopes=gist&description=Bice%20Workbench%20Sync" target="_blank" rel="noopener">点此创建 →</a></div>
-    </div>
-    <div id="syncStatusMsg" style="font-size:13px;padding:8px 12px;border-radius:8px;margin-bottom:12px;display:none"></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" style="flex:1" onclick="document.getElementById('syncSettingsOverlay').style.display='none'">取消</button>
-      <button class="btn btn-sm" style="flex:1;background:var(--accent);color:#fff" id="syncSaveBtn" onclick="saveSyncConfig()">保存并启用同步</button>
-    </div>
-    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,.06);display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" style="flex:1;font-size:12px" onclick="forceCloudPull()">📥 从云端拉取</button>
-      <button class="btn btn-outline btn-sm" style="flex:1;font-size:12px" onclick="forceCloudPush()">📤 推送到云端</button>
-    </div>
-  </div>
-</div>
-
-
 <script>
-// ============ GITHUB GIST CLOUD SYNC LAYER ============
-// iOS Safari and PWA home screen have COMPLETELY SEPARATE localStorage/SW instances.
-// GitHub Gist API serves as a shared cloud data pool that both ends read/write from.
-var GistSync = {
-  token: null,
-  gistId: null,
-  _initialized: false,
-
-  init: function() {
-    if (this._initialized) return;
-    this._initialized = true;
-    try { this.token = localStorage.getItem('wb5_gs_token'); } catch(e) {}
-    try { this.gistId = localStorage.getItem('wb5_gs_gistid'); } catch(e) {}
-    if (this.token && this.gistId) return true;
-    return false;
-  },
-
-  isReady: function() { return !!(this.token && this.gistId); },
-
-  // Create a private Gist for data storage
-  createGist: function() {
-    var self = this;
-    return fetch('https://api.github.com/gists', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'token ' + this.token,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      body: JSON.stringify({
-        description: 'Bice Workbench Cloud Data (auto-managed)',
-        public: false,
-        files: {
-          'workbench-data.json': {
-            content: JSON.stringify({_app:'bice-workbench',_version:'14',_created:new Date().toISOString()})
-          }
-        }
-      })
-    }).then(function(r) {
-      if (!r.ok) return r.json().then(function(e) { throw new Error(e.message || 'Gist creation failed') });
-      return r.json();
-    }).then(function(gist) {
-      self.gistId = gist.id;
-      try { localStorage.setItem('wb5_gs_gistid', gist.id); } catch(e) {}
-      return gist;
-    });
-  },
-
-  // Load data from Gist
-  load: function() {
-    if (!this.token || !this.gistId) return Promise.resolve(null);
-    return fetch('https://api.github.com/gists/' + this.gistId, {
-      headers: {
-        'Authorization': 'token ' + this.token,
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    }).then(function(r) {
-      if (!r.ok) throw new Error('Gist fetch failed: ' + r.status);
-      return r.json();
-    }).then(function(gist) {
-      var f = gist.files['workbench-data.json'];
-      if (!f || !f.content) return null;
-      try { return JSON.parse(f.content); } catch(e) { return null; }
-    }).catch(function(err) {
-      console.warn('[GistSync] Load failed:', err.message);
-      return null;
-    });
-  },
-
-  // Save data to Gist (with debounce)
-  _saveTimer: null,
-  save: function(data) {
-    var self = this;
-    if (!this.token || !this.gistId) return Promise.resolve(false);
-    clearTimeout(this._saveTimer);
-    return new Promise(function(resolve) {
-      self._saveTimer = setTimeout(function() {
-        fetch('https://api.github.com/gists/' + self.gistId, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': 'token ' + self.token,
-            'Content-Type': 'application/json',
-            'Accept': 'application/vnd.github.v3+json'
-          },
-          body: JSON.stringify({
-            files: {
-              'workbench-data.json': { content: JSON.stringify(data) }
-            }
-          })
-        }).then(function(r) {
-          if (!r.ok) throw new Error('Save failed: ' + r.status);
-          return r.json();
-        }).then(function() {
-          updateSyncBadge('online');
-          resolve(true);
-        }).catch(function(err) {
-          console.warn('[GistSync] Save failed:', err.message);
-          updateSyncBadge('offline');
-          resolve(false);
-        });
-      }, 500);
-    });
-  }
-};
-
-// ============ SYNC BADGE UI ============
-var _syncBadgeTimer = null;
-function updateSyncBadge(state) {
-  var badge = document.getElementById('syncBadge');
-  var dot = badge.querySelector('.sync-status-dot');
-  var refreshBtn = document.getElementById('syncRefreshBtn');
-  if (!badge) return;
-  badge.className = 'sync-badge ' + state;
-  dot.className = 'sync-status-dot ' + state;
-  if (state === 'online') {
-    badge.innerHTML = '<span class="sync-status-dot online"></span>已同步';
-    if (refreshBtn) refreshBtn.style.display = '';
-  } else if (state === 'syncing') {
-    badge.innerHTML = '<span class="sync-status-dot syncing"></span>同步中';
-  } else {
-    badge.innerHTML = '<span class="sync-status-dot offline"></span>未同步';
-    if (refreshBtn) refreshBtn.style.display = 'none';
-  }
-  // Auto-clear syncing after 5s
-  if (state === 'syncing') {
-    clearTimeout(_syncBadgeTimer);
-    _syncBadgeTimer = setTimeout(function() {
-      updateSyncBadge(GistSync.isReady() ? 'online' : 'offline');
-    }, 5000);
-  }
-}
-
-function openSyncSettings() {
-  var ov = document.getElementById('syncSettingsOverlay');
-  if (ov.style.display === 'flex' || ov.style.display === 'block') {
-    ov.style.display = 'none';
-  } else {
-    ov.style.display = 'flex';
-    // Pre-fill fields
-    if (GistSync.token) document.getElementById('syncTokenInput').value = GistSync.token;
-    // Clear status
-    var msg = document.getElementById('syncStatusMsg');
-    msg.style.display = 'none';
-    if (GistSync.isReady()) {
-      msg.style.display = 'block';
-      msg.style.background = '#e8f5e9';
-      msg.style.color = '#2e7d32';
-      msg.textContent = '✓ 云端同步��启用 — Gist ID: ' + GistSync.gistId.substring(0,8) + '...';
-    }
-  }
-}
-
-function saveSyncConfig() {
-  var token = document.getElementById('syncTokenInput').value.trim();
-  var msg = document.getElementById('syncStatusMsg');
-  msg.style.display = 'none';
-
-  if (!token || !token.startsWith('ghp_')) {
-    msg.style.display = 'block';
-    msg.style.background = '#fbe9e7';
-    msg.style.color = '#c62828';
-    msg.textContent = 'Token 格式错误，应以 ghp_ 开头';
-    return;
-  }
-
-  msg.style.display = 'block';
-  msg.style.background = '#e3f2fd';
-  msg.style.color = '#1565c0';
-  msg.textContent = '正在连接 GitHub...';
-
-  // Save token
-  GistSync.token = token;
-  try { localStorage.setItem('wb5_gs_token', token); } catch(e) {}
-
-  // Create or verify Gist
-  if (GistSync.gistId) {
-    // Already have a Gist — verify it
-    GistSync.load().then(function(data) {
-      if (data !== null) {
-        msg.style.background = '#e8f5e9';
-        msg.style.color = '#2e7d32';
-        msg.textContent = '✓ 云端同步已启用！Gist ID: ' + GistSync.gistId.substring(0,8) + '...';
-        updateSyncBadge('online');
-        document.getElementById('syncRefreshBtn').style.display = '';
-        // Pull latest data
-        setTimeout(function() { mergeCloud(data); }, 300);
-      } else {
-        // Gist not found — create new one
-        GistSync.createGist().then(function() {
-          msg.style.background = '#e8f5e9';
-          msg.style.color = '#2e7d32';
-          msg.textContent = '✓ 云端存储已创建！Gist ID: ' + GistSync.gistId.substring(0,8) + '...';
-          updateSyncBadge('online');
-          document.getElementById('syncRefreshBtn').style.display = '';
-          forceCloudPush();
-        }).catch(function(err) {
-          msg.style.background = '#fbe9e7';
-          msg.style.color = '#c62828';
-          msg.textContent = '创建 Gist 失败：' + err.message;
-        });
-      }
-    });
-  } else {
-    GistSync.createGist().then(function() {
-      msg.style.background = '#e8f5e9';
-      msg.style.color = '#2e7d32';
-      msg.textContent = '✓ 云端存储已创建！Gist ID: ' + GistSync.gistId.substring(0,8) + '...';
-      updateSyncBadge('online');
-      document.getElementById('syncRefreshBtn').style.display = '';
-      forceCloudPush();
-    }).catch(function(err) {
-      msg.style.background = '#fbe9e7';
-      msg.style.color = '#c62828';
-      msg.textContent = '创建 Gist 失败：' + err.message;
-    });
-  }
-}
-
-// ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '21';
+// ============ LOCAL STORAGE HELPERS (PWA 手机端专用 · 无云端同步) ============
+var APP_VERSION = '22';
 var SYNC_KEYS = ['fitness','thoughts','calorie','english','videos','avatar'];
-
-// Version migration: if old version, clear cache on next SW update
-try {
-  var _ver = localStorage.getItem('wb5_appver');
-  if (_ver !== APP_VERSION) {
-    localStorage.setItem('wb5_appver', APP_VERSION);
-    // Force SW update
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'skip-waiting' });
-    }
-  }
-} catch(e) {}
-
-// Read from localStorage (primary store)
 function ld(k, d) {
   try { var r = localStorage.getItem('wb5_' + k); return r ? JSON.parse(r) : d; } catch(e) { return d; }
 }
-
-// Write to localStorage + schedule cloud push (per-key timestamp enables Last-Writer-Wins merge)
-var _cloudPushTimer = null;
-function tsKey(k){return 'wb5_'+k+'_ts';}
-function getTs(k){var t=localStorage.getItem(tsKey(k));return t?parseInt(t,10):0;}
 function sv(k, v) {
-  try { localStorage.setItem('wb5_' + k, JSON.stringify(v)); localStorage.setItem(tsKey(k), String(Date.now())); } catch(e) { toast('存储空间不足，请清理数据'); return; }
-  scheduleCloudPush();
+  try { localStorage.setItem('wb5_' + k, JSON.stringify(v)); } catch(e) { toast('\u5b58\u50a8\u7a7a\u95f4\u4e0d\u8db3\uff0c\u8bf7\u6e05\u7406\u6570\u636e'); return; }
 }
-// Immediately push local data to cloud (used right after a delete so the deletion
-// propagates to the other end without waiting for the 800ms debounce).
-function flushCloud(){ if (GistSync.isReady()) { clearTimeout(_cloudPushTimer); pushToCloud(); } }
-
-// Debounced cloud push after local changes
-function scheduleCloudPush() {
-  if (!GistSync.isReady()) return;
-  clearTimeout(_cloudPushTimer);
-  _cloudPushTimer = setTimeout(function() {
-    pushToCloud();
-  }, 800);
-}
-
-// Push all local data to cloud
-function pushToCloud() {
-  if (!GistSync.isReady()) return;
-  updateSyncBadge('syncing');
-  var data = { _app: 'bice-workbench', _version: APP_VERSION, _updated: new Date().toISOString(), _ts: {} };
-  SYNC_KEYS.forEach(function(k) {
-    try { var r = localStorage.getItem('wb5_' + k); if (r) { data[k] = JSON.parse(r); data._ts[k] = getTs(k); } } catch(e) {}
-  });
-  GistSync.save(data);
-}
-
-// Merge cloud data into local with Last-Writer-Wins by per-key timestamp.
-// This guarantees a local delete (which bumps local ts to "now") is never
-// overwritten by a stale cloud copy — fixing the "deleted item resurrects" bug.
-function mergeCloud(cloudData) {
-  if (!cloudData) return;
-  var merged = 0;
-  var avatarMerged = false;
-  SYNC_KEYS.forEach(function(k) {
-    if (!cloudData[k]) return;
-    var cloudTs = (cloudData._ts && cloudData._ts[k]) ? cloudData._ts[k] : 0;
-    var localTs = getTs(k);
-    if (cloudTs > localTs) {
-      try { localStorage.setItem('wb5_' + k, JSON.stringify(cloudData[k])); localStorage.setItem(tsKey(k), String(cloudTs)); merged++; if (k === 'avatar') avatarMerged = true; } catch(e) {}
-    } else if (cloudTs < localTs) {
-      // Local is newer (e.g. just deleted) — push local up so cloud reconciles
-      scheduleCloudPush();
-    }
-  });
-  if (avatarMerged) renderAvatar();
-  if (merged > 0) {
-    console.log('[Cloud] Merged ' + merged + ' keys from cloud (silent — no auto re-render)');
-    updateSyncBadge('online');
-    // v16: no automatic page re-render on periodic sync. Auto cur.click() every 15s
-    // interrupted user input/scroll. Merged data appears on next page switch or manual refresh.
-  }
-}
-
-function forceCloudPull() {
-  if (!GistSync.isReady()) {
-    openSyncSettings();
-    return;
-  }
-  updateSyncBadge('syncing');
-  GistSync.load().then(function(data) {
-    if (data) {
-      mergeCloud(data);
-      updateSyncBadge('online');
-    } else {
-      updateSyncBadge('offline');
-      toast('云端暂无数据');
-    }
-  }).catch(function(err) {
-    updateSyncBadge('offline');
-    toast('拉取失败：' + err.message);
-  });
-}
-
-function forceCloudPush() {
-  if (!GistSync.isReady()) {
-    openSyncSettings();
-    return;
-  }
-  updateSyncBadge('syncing');
-  pushToCloud();
-  setTimeout(function() {
-    updateSyncBadge('online');
-    toast('数据已推送到云端');
-  }, 2000);
-}
-
-// ============ REAL-TIME CLOUD SYNC (periodic silent pull) ============
-var _cloudSyncTimer = null;
-function startCloudSync() {
-  if (_cloudSyncTimer) return;
-  if (!GistSync.isReady()) return;
-  _cloudSyncTimer = setInterval(function() {
-    if (!GistSync.isReady()) return;
-    GistSync.load().then(function(data) {
-      if (!data) return;
-      mergeCloud(data);
-    }).catch(function() {});
-  }, 15000);
-}
-
+// ============================================================
 // ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
@@ -874,7 +491,7 @@ function triggerAvatarUpload(){
     r.onload=function(ev){
       var data=ev.target.result;
       compressImage(data,80).then(function(cdata){
-        sv('avatar',cdata);renderAvatar();flushCloud();toast('头像已更新');
+        sv('avatar',cdata);renderAvatar();toast('头像已更新');
       });
     };r.readAsDataURL(f);
   };
@@ -1745,14 +1362,14 @@ function logEx(){
   if(!n||!d){toast('请填写名称和时长');return}
   var w=parseInt((document.getElementById('exWeight')?document.getElementById('exWeight').value:'0'),10)||getWeight();setWeight(w);
   var cal=calcCal(n,d);
-  var st=ld('fitness',{exercises:[],custom:[]});st.exercises.push({name:n,duration:d,date:td(),cal:cal});sv('fitness',st);flushCloud();
+  var st=ld('fitness',{exercises:[],custom:[]});st.exercises.push({name:n,duration:d,date:td(),cal:cal});sv('fitness',st);
   document.getElementById('exName').value='';renderFitness(document.getElementById('contentArea'));toast('已添加 · 🔥'+cal+' kcal');
 }
 function rmEx(i){
   var st=ld('fitness',{exercises:[],custom:[]});var t=td();
   var todayEx=st.exercises.filter(function(e){return e.date===t});
   if(todayEx[i]){var gi=st.exercises.indexOf(todayEx[i]);if(gi>-1)st.exercises.splice(gi,1)}
-  sv('fitness',st);flushCloud();refreshFitnessTab('today');toast('已删除');
+  sv('fitness',st);refreshFitnessTab('today');toast('已删除');
 }
 function uploadExPhoto(){
   document.getElementById('cameraInput').click();document.getElementById('cameraInput').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(ev){compressImage(ev.target.result,200).then(function(comp){var img=document.getElementById('exPhotoPreview');img.src=comp;img.style.display='block';img.dataset.photo=comp})};r.readAsDataURL(f)}
@@ -1778,7 +1395,7 @@ function saveEx(){
     toast('保存失败: '+(e.message||'存储空间不足'));
   }
 }
-function rmCEx(i){showConfirm('删除动作','确定要删除这个跟练动作吗？',function(){var st=ld('fitness',{exercises:[],custom:[]});if(st.custom)st.custom.splice(i,1);sv('fitness',st);flushCloud();refreshFitnessTab('uploaded');if(GistSync.isReady())setTimeout(function(){GistSync.load().then(function(d){if(d)mergeCloud(d);refreshFitnessTab('uploaded');}).catch(function(){})},450);toast('已删除')})}
+function rmCEx(i){showConfirm('删除动作','确定要删除这个跟练动作吗？',function(){var st=ld('fitness',{exercises:[],custom:[]});if(st.custom)st.custom.splice(i,1);sv('fitness',st);refreshFitnessTab('uploaded');toast('已删除')})}
 
 // ============ CALORIE MODULE (expanded DB + combo parsing + swipe delete) ============
 const FOOD_DB = [
@@ -2219,7 +1836,7 @@ function showThoughtDetail(idx){
     null
   );
 }
-function rmThought(i){showConfirm('删除笔记','确定要删除这条笔记吗？',function(){var st=ld('thoughts',{notes:[]});if(i>=0&&i<st.notes.length)st.notes.splice(i,1);sv('thoughts',st);flushCloud();renderThoughtsList(st, window._thoughtFilter||'全部');if(GistSync.isReady())setTimeout(function(){GistSync.load().then(function(d){if(d)mergeCloud(d);renderThoughtsList(ld('thoughts',{notes:[]}), window._thoughtFilter||'全部');}).catch(function(){})},450);toast('已删除')})}
+function rmThought(i){showConfirm('删除笔记','确定要删除这条笔记吗？',function(){var st=ld('thoughts',{notes:[]});if(i>=0&&i<st.notes.length)st.notes.splice(i,1);sv('thoughts',st);renderThoughtsList(st, window._thoughtFilter||'全部');toast('已删除')})}
 
 // ============ IMAGE PREVIEW ============
 function previewImg(src){
@@ -2279,18 +1896,6 @@ try {
     if (_inited) return;
     _inited = true;
 
-    // Init cloud sync (non-blocking)
-    try { GistSync.init(); } catch(e) {}
-      startCloudSync();
-    if (GistSync.isReady()) {
-      try { updateSyncBadge('online'); } catch(e) {}
-      try { document.getElementById('syncRefreshBtn').style.display = ''; } catch(e) {}
-      GistSync.load().then(function(cloudData) {
-        if (cloudData) mergeCloud(cloudData);
-      }).catch(function() {
-        try { updateSyncBadge('offline'); } catch(e) {}
-      });
-    }
 
     // Version check
     setTimeout(function() { checkAppVersion(); }, 2000);

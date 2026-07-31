@@ -1,67 +1,65 @@
-// Bice Workbench Service Worker v21
-// Strategy: NO CACHING — always network-first, cache only as fallback
-// Old caches (v8-v16) deleted on activate
-const CACHE_NAME = 'bice-wb-v21';
-const SW_VERSION = '21';
+// Bice Workbench Service Worker v22 — Cache-First app shell for instant offline PWA
+const CACHE_NAME = 'bice-wb-v22';
+const SW_VERSION = '22';
 
-// Skip waiting: new SW takes control immediately
 self.addEventListener('install', function(event) {
-  console.log('[SW v21] Installing — skipWaiting enabled');
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.addAll([
+        './', './index.html', './manifest.json', './sw.js?v=22',
+        './icon-192.png', './icon-512.png'
+      ]);
+attr
+    })
+  );
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(function(cache) {
+      return cache.put('./sw.js', new Response('/* v22 */', { 'Content-Type': 'application/javascript' }));
+    })
+  );
 });
 
-// Activate: DELETE ALL OLD CACHES unconditionally
 self.addEventListener('activate', function(event) {
-  console.log('[SW v21] Activating — clearing all legacy caches');
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
-        keys.map(function(k) {
-          console.log('[SW v21] Deleting old cache:', k);
-          return caches.delete(k);
-        })
-      );
-    }).then(function() {
-      // Take control of all clients immediately
-      return self.clients.claim();
-    }).then(function() {
-      // Notify all clients
-      return self.clients.matchAll().then(function(clients) {
-        clients.forEach(function(client) {
-          client.postMessage({ type: 'sw-updated', version: 'v21' });
-        });
-      });
+        keys.map(function(k) { if (k !== CACHE_NAME) return caches.delete(k); })
+      ).then(function() { return self.clients.claim(); });
     })
   );
 });
 
-// Runtime: network-first for everything, cache as fallback only
 self.addEventListener('fetch', function(event) {
-  // Only handle GET
   if (event.request.method !== 'GET') return;
-
-  // Skip non-HTTP(S)
   var url = new URL(event.request.url);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
 
-  event.respondWith(
-    fetch(event.request, { cache: 'no-store' }).then(function(response) {
-      // Cache successful responses for offline fallback
-      if (response.ok) {
-        var clone = response.clone();
-        caches.open(CACHE_NAME).then(function(cache) {
-          cache.put(event.request, clone);
+  if (url.origin === location.origin) {
+    // App shell: CACHE-FIRST — offline navigation returns instantly (no connect wait)
+    event.respondWith(
+      caches.match(event.request).then(function(cached) {
+        if (cached) return cached;
+        return fetch(event.request).then(function(res) {
+          if (res.ok) {
+            var clone = res.clone();
+            caches.open(CACHE_NAME).then(function(cache) { cache.put(event.request, clone); });
+          }
+          return res;
+        }).catch(function() {
+          if (event.request.mode === 'navigate') {
+            return new Response('离线模式已就绪，请稍候加载', { status: 503, statusText: 'Service Unavailable' });
+          }
+          return new Response('', { status: 503 });
         });
-      }
-      return response;
-    }).catch(function() {
-      // Network failed — try cache fallback
-      return caches.match(event.request).then(function(cached) {
-        return cached || new Response('Offline — please connect to the internet.', {
-          status: 503,
-          statusText: 'Service Unavailable'
-        });
-      });
-    })
-  );
+      })
+    );
+  } else {
+    // Cross-origin (Unsplash / GitHub API): network-first with cache fallback
+    event.respondWith(
+      fetch(event.request).then(function(res) { return res; }).catch(function() {
+        return caches.match(event.request).then(function(c) { return c || new Response('', { status: 503 }); });
+      })
+    );
+  }
 });
