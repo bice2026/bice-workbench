@@ -1,5 +1,5 @@
 // Bice Workbench Service Worker v22 — Cache-First app shell for instant offline PWA
-const CACHE_NAME = 'bice-wb-v22';
+const CACHE_NAME = 'bice-wb-v23';
 const SW_VERSION = '22';
 
 self.addEventListener('install', function(event) {
