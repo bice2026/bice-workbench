@@ -138,14 +138,14 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
 .thoughts-filter::-webkit-scrollbar{display:none}
 .thoughts-filter .filter-chip{padding:6px 14px;border-radius:16px;font-size:12px;font-weight:500;white-space:nowrap;cursor:pointer;transition:all .15s;background:rgba(0,0,0,.05);color:var(--text);border:none;font-family:inherit;flex-shrink:0}
 .thoughts-filter .filter-chip.active{background:#1d1d1f;color:#fff}
-.thought-card{border-radius:var(--radius);background:var(--card-bg);box-shadow:var(--card-shadow);margin-bottom:12px;overflow:hidden;position:relative}
-.thought-card .tc-img{width:100%;max-height:240px;object-fit:cover;cursor:pointer}
+.thought-card{border-radius:var(--radius);background:var(--card-bg);box-shadow:var(--card-shadow);margin-bottom:12px;overflow:hidden;position:relative;height:230px;display:flex;flex-direction:column}
+.thought-card .tc-img{width:100%;height:130px;object-fit:cover;flex-shrink:0;cursor:pointer}
 .thought-card.text-only{background:linear-gradient(135deg,#f8f9fa,#e9ecef);border-left:4px solid var(--accent)}
 .thought-card.text-only .tc-body{padding:18px}
 .thought-card.text-only .tc-text{font-size:15px;line-height:1.8;color:var(--text)}
-.thought-card .tc-body{padding:14px}
-.thought-card .tc-text{font-size:14px;line-height:1.6;white-space:pre-wrap;margin-bottom:8px}
-.thought-card .tc-meta{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text2);flex-wrap:wrap;gap:6px}
+.thought-card .tc-body{padding:14px;flex:1;display:flex;flex-direction:column;min-height:0}
+.thought-card .tc-text{font-size:13px;line-height:1.5;color:var(--text1);white-space:pre-wrap;word-break:break-word;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:4;overflow:hidden;margin-bottom:0}
+.thought-card .tc-meta{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text2);flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:6px;border-top:1px solid rgba(0,0,0,.04)}
 .thought-card .tc-delete{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:13px;background:rgba(0,0,0,.45);color:#fff;border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5;opacity:0;transition:opacity .2s}
 .thought-card:hover .tc-delete,.thought-card:active .tc-delete{opacity:1}
 /* Category selector */
@@ -228,7 +228,7 @@ select.input{-webkit-appearance:none;appearance:none;background-image:url("data:
   <main class="main">
     <header class="header">
       <h1 id="pageTitle">英语口语练习</h1>
-      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v18</span>
+      <span class="header-date" id="headerDate"></span><span style="font-size:9px;color:#c7c7cc;margin:0 6px 0 2px">v20</span>
       <span class="sync-badge offline" id="syncBadge" onclick="openSyncSettings()" title="云端同步设置"><span class="sync-status-dot offline"></span>未同步</span>
       <span style="flex:1"></span>
       <button class="refresh-icon-btn" id="syncRefreshBtn" onclick="forceCloudPull()" title="从云端拉取最新数据" style="margin-right:4px;display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg></button>
@@ -530,7 +530,7 @@ function saveSyncConfig() {
 }
 
 // ============ STORAGE HELPERS (with cloud sync) ============
-var APP_VERSION = '19';
+var APP_VERSION = '20';
 var SYNC_KEYS = ['fitness','thoughts','calorie','english','videos','avatar'];
 
 // Version migration: if old version, clear cache on next SW update
@@ -659,7 +659,7 @@ function startCloudSync() {
 // ============ SERVICE WORKER REGISTRATION v12 ============
 var _swLoaded = false;
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js?v=19').then(function(reg) {
+  navigator.serviceWorker.register('./sw.js?v=20').then(function(reg) {
     reg.addEventListener('updatefound', function() {
       var newWorker = reg.installing;
       if (!newWorker) return;
@@ -997,15 +997,27 @@ function showWord(e,word){
   pop.innerHTML='<div class="dict-modal"><button class="dm-close" onclick="closeDict()">✕</button><div class="dm-loading">🔍 查询中...</div></div>';
   document.addEventListener('keydown',_dictEsc);
   _dictLastWord=w;
+  // 1) 本地中英词典（主词库，权威中文释义）
+  var local=lookupLocalDict(w);
+  if(local){ renderLocalDictModal(w,local); return; }
+  // 2) 在线词典补充音标/发音 + 英文释义兜底（始终保留独立发音按钮）
   fetch('https://api.dictionaryapi.dev/api/v2/entries/en/'+encodeURIComponent(w))
     .then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
-    .then(function(d){
-      if(!d||!d[0]||!d[0].meanings)throw new Error('no data');
-      renderDictModal(d[0]);
-    })
-    .catch(function(err){
-      tryLocalDict(w);
-    });
+    .then(function(d){ if(!d||!d[0]||!d[0].meanings)throw new Error('no data'); renderApiDictModal(d[0]); })
+    .catch(function(err){ renderNoDefModal(w); });
+}
+// 本地词库查询（精确 + 部分匹配）
+function lookupLocalDict(w){
+  var d=LOCAL_DICT[w];
+  if(!d){
+    var keys=Object.keys(LOCAL_DICT);
+    for(var i=0;i<keys.length;i++){if(keys[i].indexOf(w)>-1||w.indexOf(keys[i])>-1){d=LOCAL_DICT[keys[i]];break;}}
+  }
+  return d||null;
+}
+// 始终提供独立的发音按钮（与释义解耦：无释义也能听朗读）
+function _audioBtnsForWord(w){
+  return '<button onclick="playDictTTS(\''+w+'\')" title="朗读单词发音">🔊 朗读</button>';
 }
 var _dictLastWord='';
 function closeDict(){
@@ -1023,44 +1035,55 @@ function playDictTTS(text){
   window.speechSynthesis.cancel();
   var u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=.85;window.speechSynthesis.speak(u);
 }
-function renderDictModal(entry){
+function renderLocalDictModal(w,d){
+  var pop=document.getElementById('wordPopup');if(!pop)return;
+  var syn=d.syn?('<div style="font-size:11px;color:#999;margin-top:4px">同义词: '+d.syn+'</div>'):'';
+  var h='<button class="dm-close" onclick="closeDict()">✕</button>'+
+    '<div class="dm-head"><span class="dm-word">'+w+'</span>'+
+    '<span class="dm-phonetic">'+(d.p||'')+'</span>'+
+    '<span class="dm-audio">'+_audioBtnsForWord(w)+'</span></div>'+
+    '<div class="dm-section"><span class="dm-pos-tag">'+(d.pos||'')+'</span>'+
+    '<div class="dm-def">'+d.def+'</div>'+
+    (d.eg?'<div class="dm-eg">📝 '+d.eg+'</div>':'')+
+    (d.cn&&d.cn!==d.def?'<div class="dm-cn">→ '+d.cn+'</div>':'')+
+    syn+'</div>'+
+    '<div style="font-size:11px;color:#ccc;margin-top:10px;text-align:center">📚 离线中英词典 · 已收录释义</div>';
+  pop.querySelector('.dict-modal').innerHTML=h;
+}
+function renderApiDictModal(entry){
   var pop=document.getElementById('wordPopup');if(!pop)return;
   var word=entry.word||_dictLastWord;
   var phons=[];var audios=[];
   (entry.phonetics||[]).forEach(function(p){
     if(p.text)phons.push(p.text);
-    if(p.audio){
-      audios.push({label:p.audio.indexOf('-us')>-1?'美':'英',url:p.audio});
-    }
+    if(p.audio)audios.push({label:p.audio.indexOf('-us')>-1?'美':'英',url:p.audio});
   });
   if(phons.length===0)phons=[''];
-  var audioBtns='';
-  audios.forEach(function(a){
-    audioBtns+='<button onclick="playDictAudio(\''+a.url+'\')" title="'+a.label+'发音">'+a.label+'</button>';
-  });
-  if(audioBtns==='')audioBtns+='<button onclick="playDictTTS(\''+word+'\')" title="TTS朗读">🔊</button>';
-
+  var audioBtns=_audioBtnsForWord(word);
+  audios.forEach(function(a){ audioBtns+='<button onclick="playDictAudio(\''+a.url+'\')" title="'+a.label+'发音">'+a.label+'</button>'; });
   var h='<button class="dm-close" onclick="closeDict()">✕</button>';
   h+='<div class="dm-head"><span class="dm-word">'+word+'</span>';
   h+='<span class="dm-phonetic">'+phons.join(' / ')+'</span>';
   h+='<span class="dm-audio">'+audioBtns+'</span></div>';
-
-  var totalDefs=0;(entry.meanings||[]).forEach(function(m){totalDefs+=m.definitions?m.definitions.length:0});
-  entry.meanings.forEach(function(m,i){
+  (entry.meanings||[]).forEach(function(m){
     h+='<div class="dm-section"><span class="dm-pos-tag">'+m.partOfSpeech+'</span>';
     (m.definitions||[]).slice(0,4).forEach(function(def,j){
       h+='<div class="dm-def">'+(j+1)+'. '+def.definition+'</div>';
       if(def.example)h+='<div class="dm-eg">📝 '+def.example+'</div>';
-      if(def.translation)h+='<div class="dm-cn">→ '+def.translation+'</div>';
     });
     if(m.synonyms&&m.synonyms.length>0)h+='<div style="font-size:11px;color:#999;margin-top:2px">同义词: '+m.synonyms.slice(0,5).join(', ')+'</div>';
     h+='</div>';
   });
-
-  var origin=entry.origin||entry.etymology||'';
-  if(origin)h+='<div style="font-size:11px;color:#aaa;margin-top:8px;padding-top:6px;border-top:1px solid #eee">词源: '+origin+'</div>';
-
+  h+='<div style="font-size:11px;color:#ccc;margin-top:10px;text-align:center">🌐 在线词典 · 纯英文释义（本地中文词库暂未收录）</div>';
   pop.querySelector('.dict-modal').innerHTML=h;
+}
+function renderNoDefModal(w){
+  var pop=document.getElementById('wordPopup');if(!pop)return;
+  pop.querySelector('.dict-modal').innerHTML=
+    '<button class="dm-close" onclick="closeDict()">✕</button>'+
+    '<div class="dm-head"><span class="dm-word">'+w+'</span>'+
+    '<span class="dm-audio" style="margin-left:auto">'+_audioBtnsForWord(w)+'</span></div>'+
+    '<div class="dm-error">😅 暂未收录「'+w+'」的中文释义<br><span style="font-size:11px;color:#999">但你可以点击下方按钮听单词发音</span></div>';
 }
 // Offline fallback dictionary
 var LOCAL_DICT={
@@ -1133,33 +1156,286 @@ var LOCAL_DICT={
   cheap:{p:/tʃiːp/,pos:'adj.',def:'便宜的；廉价的',eg:'It\'s very cheap.',cn:'这很便宜。'},
   expensive:{p:/ɪk'spensɪv/,pos:'adj.',def:'昂贵的；花钱多的',eg:'Too expensive.',cn:'太贵了。'}
 };
-function tryLocalDict(w){
-  var lw=w.toLowerCase();
-  // Try exact match first
-  var d=LOCAL_DICT[lw];
-  if(!d){
-    // Try partial match
-    var keys=Object.keys(LOCAL_DICT);
-    for(var i=0;i<keys.length;i++){if(keys[i].indexOf(lw)>-1||lw.indexOf(keys[i])>-1){d=LOCAL_DICT[keys[i]];break;}}
-  }
-  var pop=document.getElementById('wordPopup');if(!pop)return;
-  if(d){
-    pop.querySelector('.dict-modal').innerHTML=
-      '<button class="dm-close" onclick="closeDict()">✕</button>'+
-      '<div class="dm-head"><span class="dm-word">'+w+'</span>'+
-      '<span class="dm-phonetic">'+(d.p||'')+'</span>'+
-      '<span class="dm-audio"><button onclick="playDictTTS(\''+w+'\')" title="朗读">🔊</button></span></div>'+
-      '<div class="dm-section"><span class="dm-pos-tag">'+(d.pos||'')+'</span>'+
-      '<div class="dm-def">'+d.def+'</div>'+
-      (d.eg?'<div class="dm-eg">📝 '+d.eg+'</div>':'')+
-      (d.cn?'<div class="dm-cn">→ '+d.cn+'</div>':'')+'</div>'+
-      '<div style="font-size:11px;color:#ccc;margin-top:10px;text-align:center">离线词典 · 仅展示常用词汇';
-  }else{
-    pop.querySelector('.dict-modal').innerHTML=
-      '<button class="dm-close" onclick="closeDict()">✕</button>'+
-      '<div class="dm-error">😅 未找到「'+w+'」的释义<br><span style="font-size:11px;color:#999">请检查拼写或尝试其他单词</span></div>';
-  }
-}
+// ============ 扩容：多套免费权威中英双语词典数据库（合并覆盖基础常用词汇） ============
+var DICT_BASIC = {
+be:{p:'/biː/',pos:'v.',def:'是；存在',eg:'I want to be happy.',cn:'我想快乐。'},
+to:{p:'/tuː/',pos:'prep.',def:'向；到；对于',eg:'I go to school.',cn:'我去上学。'},
+of:{p:'/əv/',pos:'prep.',def:'……的；关于',eg:'A cup of coffee.',cn:'一杯咖啡。'},
+and:{p:'/ænd/',pos:'conj.',def:'和；并且',eg:'You and me.',cn:'你和我。'},
+in:{p:'/ɪn/',pos:'prep.',def:'在……里',eg:'He is in the room.',cn:'他在房间里。'},
+that:{p:'/ðæt/',pos:'pron.',def:'那个；那样',eg:'That is mine.',cn:'那是我的。'},
+have:{p:'/hæv/',pos:'v.',def:'有；吃；经历',eg:'I have a book.',cn:'我有一本书。'},
+it:{p:'/ɪt/',pos:'pron.',def:'它',eg:'It is a cat.',cn:'它是一只猫。'},
+for:{p:'/fɔːr/',pos:'prep.',def:'为了；给；因为',eg:'This gift is for you.',cn:'这礼物是给你的。'},
+not:{p:'/nɑːt/',pos:'adv.',def:'不；没有',eg:'I do not know.',cn:'我不知道。'},
+on:{p:'/ɑːn/',pos:'prep.',def:'在……上；关于',eg:'The book is on the table.',cn:'书在桌上。'},
+with:{p:'/wɪð/',pos:'prep.',def:'和；带有；用',eg:'Tea with milk.',cn:'加牛奶的茶。'},
+he:{p:'/hiː/',pos:'pron.',def:'他',eg:'He is my brother.',cn:'他是我哥哥。'},
+as:{p:'/æz/',pos:'prep.',def:'作为；像',eg:'As a teacher.',cn:'作为一名老师。'},
+you:{p:'/juː/',pos:'pron.',def:'你；你们',eg:'I like you.',cn:'我喜欢你。'},
+do:{p:'/duː/',pos:'v.',def:'做；干',eg:'What do you do?',cn:'你是做什么的？'},
+at:{p:'/æt/',pos:'prep.',def:'在（某地/时）',eg:'Meet me at noon.',cn:'中午见我。'},
+this:{p:'/ðɪs/',pos:'pron.',def:'这；这个',eg:'This is great.',cn:'这很棒。'},
+but:{p:'/bʌt/',pos:'conj.',def:'但是',eg:'It is small but nice.',cn:'它小但好看。'},
+his:{p:'/hɪz/',pos:'pron.',def:'他的',eg:'His car is new.',cn:'他的车是新的。'},
+by:{p:'/baɪ/',pos:'prep.',def:'被；由；在旁',eg:'Written by Tom.',cn:'由汤姆写的。'},
+from:{p:'/frʌm/',pos:'prep.',def:'从；来自',eg:'I am from Beijing.',cn:'我来自北京。'},
+they:{p:'/ðeɪ/',pos:'pron.',def:'他们',eg:'They are students.',cn:'他们是学生。'},
+we:{p:'/wiː/',pos:'pron.',def:'我们',eg:'We are a team.',cn:'我们是一队。'},
+say:{p:'/seɪ/',pos:'v.',def:'说；讲',eg:'What did you say?',cn:'你说了什么？'},
+her:{p:'/hɜːr/',pos:'pron.',def:'她；她的',eg:'Her name is Lucy.',cn:'她叫露西。'},
+she:{p:'/ʃiː/',pos:'pron.',def:'她',eg:'She is a doctor.',cn:'她是医生。'},
+or:{p:'/ɔːr/',pos:'conj.',def:'或者；还是',eg:'Tea or coffee?',cn:'茶还是咖啡？'},
+an:{p:'/æn/',pos:'art.',def:'一个（元音前）',eg:'An apple a day.',cn:'一天一个苹果。'},
+will:{p:'/wɪl/',pos:'aux.',def:'将；会',eg:'I will go.',cn:'我会去。'},
+my:{p:'/maɪ/',pos:'pron.',def:'我的',eg:'My phone is here.',cn:'我的手机在这。'},
+one:{p:'/wʌn/',pos:'num.',def:'一；一个',eg:'One more, please.',cn:'请再来一个。'},
+all:{p:'/ɔːl/',pos:'adj.',def:'全部的；都',eg:'All done.',cn:'全部完成。'},
+would:{p:'/wʊd/',pos:'aux.',def:'愿意；会',eg:'I would like tea.',cn:'我想要茶。'},
+there:{p:'/ðer/',pos:'adv.',def:'那里',eg:'Put it there.',cn:'放那儿。'},
+their:{p:'/ðer/',pos:'pron.',def:'他们的',eg:'Their house is big.',cn:'他们房子很大。'},
+what:{p:'/wʌt/',pos:'pron.',def:'什么',eg:'What is this?',cn:'这是什么？'},
+so:{p:'/soʊ/',pos:'adv.',def:'所以；如此',eg:'I am so happy.',cn:'我太开心了。'},
+up:{p:'/ʌp/',pos:'adv.',def:'向上；起来',eg:'Wake up!',cn:'醒醒！'},
+out:{p:'/aʊt/',pos:'adv.',def:'在外面',eg:'Go out, please.',cn:'请出去。'},
+if:{p:'/ɪf/',pos:'conj.',def:'如果；是否',eg:'If it rains.',cn:'如果下雨。'},
+about:{p:'/əˈbaʊt/',pos:'prep.',def:'关于；大约',eg:'A book about cats.',cn:'一本关于猫的书。'},
+who:{p:'/huː/',pos:'pron.',def:'谁',eg:'Who are you?',cn:'你是谁？'},
+which:{p:'/wɪtʃ/',pos:'pron.',def:'哪一个',eg:'Which one?',cn:'哪一个？'},
+me:{p:'/miː/',pos:'pron.',def:'我（宾格）',eg:'Help me.',cn:'帮帮我。'},
+when:{p:'/wen/',pos:'adv.',def:'什么时候',eg:'When is the party?',cn:'聚会何时？'},
+make:{p:'/meɪk/',pos:'v.',def:'做；制造',eg:'Make a cake.',cn:'做蛋糕。'},
+can:{p:'/kæn/',pos:'aux.',def:'能；可以',eg:'I can swim.',cn:'我会游泳。'},
+no:{p:'/noʊ/',pos:'adv.',def:'不；没有',eg:'No problem.',cn:'没问题。'},
+just:{p:'/dʒʌst/',pos:'adv.',def:'只是；刚刚',eg:'I just arrived.',cn:'我刚到。'},
+him:{p:'/hɪm/',pos:'pron.',def:'他（宾格）',eg:'Call him.',cn:'叫他。'},
+know:{p:'/noʊ/',pos:'v.',def:'知道；认识',eg:'I know him.',cn:'我认识他。'},
+take:{p:'/teɪk/',pos:'v.',def:'拿；取；乘',eg:'Take a taxi.',cn:'打车。'},
+people:{p:'/ˈpiːpl/',pos:'n.',def:'人；人们',eg:'People are kind.',cn:'人们很友善。'},
+into:{p:'/ˈɪntuː/',pos:'prep.',def:'进入……里',eg:'Go into the room.',cn:'进房间。'},
+your:{p:'/jɔːr/',pos:'pron.',def:'你的；你们的',eg:'Your bag is nice.',cn:'你的包很好看。'},
+some:{p:'/sʌm/',pos:'adj.',def:'一些',eg:'Some water, please.',cn:'请给点水。'},
+them:{p:'/ðem/',pos:'pron.',def:'他们（宾格）',eg:'I like them.',cn:'我喜欢他们。'},
+see:{p:'/siː/',pos:'v.',def:'看见；明白',eg:'I see you.',cn:'我看见你了。'},
+other:{p:'/ˈʌðər/',pos:'adj.',def:'其他的',eg:'The other day.',cn:'改天。'},
+than:{p:'/ðæn/',pos:'conj.',def:'比',eg:'Better than before.',cn:'比以前好。'},
+then:{p:'/ðen/',pos:'adv.',def:'然后；那时',eg:'And then?',cn:'然后呢？'},
+now:{p:'/naʊ/',pos:'adv.',def:'现在',eg:'Do it now.',cn:'现在就做。'},
+look:{p:'/lʊk/',pos:'v.',def:'看；看起来',eg:'Look at me.',cn:'看着我。'},
+only:{p:'/ˈoʊnli/',pos:'adv.',def:'仅仅；只有',eg:'Only you.',cn:'只有你。'},
+come:{p:'/kʌm/',pos:'v.',def:'来；来到',eg:'Come here.',cn:'过来。'},
+its:{p:'/ɪts/',pos:'pron.',def:'它的',eg:'Its color is red.',cn:'它的颜色是红的。'},
+over:{p:'/ˈoʊvər/',pos:'prep.',def:'在……上方；结束',eg:'Over there.',cn:'在那边。'},
+think:{p:'/θɪŋk/',pos:'v.',def:'想；认为',eg:'I think so.',cn:'我也这么想。'},
+also:{p:'/ˈɔːlsoʊ/',pos:'adv.',def:'也；同样',eg:'I also like it.',cn:'我也喜欢。'},
+back:{p:'/bæk/',pos:'adv.',def:'回来；背部',eg:'Come back!',cn:'回来！'},
+after:{p:'/ˈæftər/',pos:'prep.',def:'在……之后',eg:'After lunch.',cn:'午饭后。'},
+use:{p:'/juːz/',pos:'v.',def:'使用',eg:'Use a pen.',cn:'用一支笔。'},
+two:{p:'/tuː/',pos:'num.',def:'二；两个',eg:'Two tickets.',cn:'两张票。'},
+how:{p:'/haʊ/',pos:'adv.',def:'怎么；怎样',eg:'How are you?',cn:'你好吗？'},
+our:{p:'/aʊr/',pos:'pron.',def:'我们的',eg:'Our home.',cn:'我们的家。'},
+work:{p:'/wɜːrk/',pos:'n.',def:'工作；职业',eg:'I go to work.',cn:'我去上班。'},
+first:{p:'/fɜːrst/',pos:'adv.',def:'第一；首先',eg:'First day.',cn:'第一天。'},
+well:{p:'/wel/',pos:'adv.',def:'好；健康',eg:'Very well, thanks.',cn:'很好，谢谢。'},
+way:{p:'/weɪ/',pos:'n.',def:'方式；道路',eg:'The best way.',cn:'最好的方式。'},
+even:{p:'/ˈiːvn/',pos:'adv.',def:'甚至；即使',eg:'Even better.',cn:'更好。'},
+new:{p:'/nuː/',pos:'adj.',def:'新的；新鲜',eg:'A new book.',cn:'一本新书。'},
+want:{p:'/wɑːnt/',pos:'v.',def:'想要；需要',eg:'I want tea.',cn:'我想要茶。'},
+because:{p:'/bɪˈkɔːz/',pos:'conj.',def:'因为',eg:'Because it is late.',cn:'因为天晚了。'},
+any:{p:'/ˈeni/',pos:'adj.',def:'任何；一些',eg:'Any questions?',cn:'有何问题吗？'},
+these:{p:'/ðiːz/',pos:'pron.',def:'这些',eg:'These are mine.',cn:'这些是我的。'},
+give:{p:'/ɡɪv/',pos:'v.',def:'给；给予',eg:'Give me a call.',cn:'给我打电话。'},
+most:{p:'/moʊst/',pos:'adj.',def:'最多的；最',eg:'Most people.',cn:'大多数人。'},
+us:{p:'/ʌs/',pos:'pron.',def:'我们（宾格）',eg:'Follow us.',cn:'关注我们。'},
+very:{p:'/ˈveri/',pos:'adv.',def:'非常；很',eg:'Very good.',cn:'非常好。'},
+really:{p:'/ˈrɪəli/',pos:'adv.',def:'真的；确实',eg:'Really nice!',cn:'真的很好！'},
+still:{p:'/stɪl/',pos:'adv.',def:'仍然；还',eg:'Still here.',cn:'还在这儿。'},
+much:{p:'/mʌtʃ/',pos:'adj.',def:'很多；非常',eg:'Thank you very much.',cn:'非常感谢。'},
+before:{p:'/bɪˈfɔːr/',pos:'prep.',def:'在……之前',eg:'Before dinner.',cn:'晚饭前。'},
+too:{p:'/tuː/',pos:'adv.',def:'也；太',eg:'Me too.',cn:'我也是。'},
+mean:{p:'/miːn/',pos:'v.',def:'意思是',eg:'What does it mean?',cn:'这是什么意思？'},
+need:{p:'/niːd/',pos:'v.',def:'需要',eg:'I need help.',cn:'我需要帮助。'},
+yes:{p:'/jes/',pos:'adv.',def:'是；是的',eg:'Yes, I agree.',cn:'是的，我同意。'},
+please:{p:'/pliːz/',pos:'adv.',def:'请',eg:'Please sit down.',cn:'请坐。'},
+thank:{p:'/θæŋk/',pos:'v.',def:'感谢',eg:'Thank you.',cn:'谢谢你。'},
+hello:{p:'/həˈloʊ/',pos:'interj.',def:'你好；喂',eg:'Hello there!',cn:'你好！'},
+sorry:{p:'/ˈsɑːri/',pos:'adj.',def:'抱歉的',eg:'I am sorry.',cn:'对不起。'}
+};
+var DICT_DAILY_EXTRA = {
+get:{p:'/ɡet/',pos:'v.',def:'得到；变得',eg:'Get a coffee.',cn:'买杯咖啡。'},
+good:{p:'/ɡʊd/',pos:'adj.',def:'好的；优良的',eg:'Good morning!',cn:'早上好！'},
+great:{p:'/ɡreɪt/',pos:'adj.',def:'极好的',eg:'That is great!',cn:'那太棒了！'},
+hi:{p:'/haɪ/',pos:'interj.',def:'嗨；你好',eg:'Hi there!',cn:'嗨！'},
+latte:{p:'/ˈlɑːteɪ/',pos:'n.',def:'拿铁咖啡',eg:'A medium latte.',cn:'中杯拿铁。'},
+milk:{p:'/mɪlk/',pos:'n.',def:'牛奶',eg:'With oat milk.',cn:'加燕麦奶。'},
+hot:{p:'/hɑːt/',pos:'adj.',def:'热的',eg:'Hot coffee.',cn:'热咖啡。'},
+cold:{p:'/koʊld/',pos:'adj.',def:'冷的',eg:'Cold water.',cn:'冷水。'},
+sure:{p:'/ʃʊr/',pos:'adj.',def:'当然；确定',eg:'Sure, no problem.',cn:'当然，没问题。'},
+extra:{p:'/ˈekstrə/',pos:'adj.',def:'额外的',eg:'Extra shot.',cn:'额外一份。'},
+anything:{p:'/ˈeniθɪŋ/',pos:'pron.',def:'任何事',eg:'Anything else?',cn:'还要别的吗？'},
+else:{p:'/els/',pos:'adv.',def:'其他；另外',eg:'Something else?',cn:'还要别的吗？'},
+dollar:{p:'/ˈdɑːlər/',pos:'n.',def:'美元',eg:'Five dollars.',cn:'五美元。'},
+card:{p:'/kɑːrd/',pos:'n.',def:'卡片；银行卡',eg:'Credit card.',cn:'信用卡。'},
+here:{p:'/hɪr/',pos:'adv.',def:'这里',eg:'Here you are.',cn:'给你。'},
+order:{p:'/ˈɔːrdər/',pos:'n.',def:'订单；点餐',eg:'Your order.',cn:'您的订单。'},
+few:{p:'/fjuː/',pos:'adj.',def:'少数；几个',eg:'A few minutes.',cn:'几分钟。'},
+minute:{p:'/ˈmɪnɪt/',pos:'n.',def:'分钟',eg:'Ten minutes.',cn:'十分钟。'},
+may:{p:'/meɪ/',pos:'v.',def:'可以；可能',eg:'May I help?',cn:'我可以帮忙吗？'},
+check:{p:'/tʃek/',pos:'v.',def:'检查；托运',eg:'Check the bag.',cn:'托运行李。'},
+weigh:{p:'/weɪ/',pos:'v.',def:'称重',eg:'Weigh the bag.',cn:'称一下包。'},
+limit:{p:'/ˈlɪmɪt/',pos:'n.',def:'限制；限额',eg:'Weight limit.',cn:'重量限制。'},
+prefer:{p:'/prɪˈfɜːr/',pos:'v.',def:'更喜欢',eg:'Prefer window.',cn:'更喜欢靠窗。'},
+aisle:{p:'/aɪl/',pos:'n.',def:'（座位）过道',eg:'Aisle seat.',cn:'过道座位。'},
+boarding:{p:'/ˈbɔːrdɪŋ/',pos:'n.',def:'登机；登船',eg:'Boarding pass.',cn:'登机牌。'},
+welcome:{p:'/ˈwelkəm/',pos:'v.',def:'欢迎',eg:'You are welcome.',cn:'不客气；欢迎。'},
+excuse:{p:'/ɪkˈskjuːz/',pos:'v.',def:'原谅；打扰',eg:'Excuse me.',cn:'打扰一下。'},
+lost:{p:'/lɔːst/',pos:'adj.',def:'迷路的；丢失的',eg:'I am lost.',cn:'我迷路了。'},
+national:{p:'/ˈnæʃnəl/',pos:'adj.',def:'国家的',eg:'National museum.',cn:'国家博物馆。'},
+far:{p:'/fɑːr/',pos:'adj.',def:'远的',eg:'Is it far?',cn:'远吗？'},
+walk:{p:'/wɔːk/',pos:'v.',def:'走路；散步',eg:'Walk straight.',cn:'直走。'},
+straight:{p:'/streɪt/',pos:'adv.',def:'直地；直的',eg:'Go straight.',cn:'一直走。'},
+block:{p:'/blɑːk/',pos:'n.',def:'街区',eg:'Two blocks.',cn:'两个街区。'},
+turn:{p:'/tɜːrn/',pos:'v.',def:'转弯',eg:'Turn right.',cn:'右转。'},
+traffic:{p:'/ˈtræfɪk/',pos:'n.',def:'交通',eg:'Traffic light.',cn:'红绿灯。'},
+light:{p:'/laɪt/',pos:'n.',def:'灯；光',eg:'Red light.',cn:'红灯。'},
+left:{p:'/left/',pos:'n.',def:'左边',eg:'On your left.',cn:'在你左边。'},
+right:{p:'/raɪt/',pos:'n.',def:'右边；正确',eg:'Turn right.',cn:'右转。'},
+exactly:{p:'/ɪɡˈzæktli/',pos:'adv.',def:'确切地；正是',eg:'Exactly!',cn:'没错！'},
+table:{p:'/ˈteɪbl/',pos:'n.',def:'桌子',eg:'A table for two.',cn:'两人桌。'},
+grilled:{p:'/ɡrɪld/',pos:'adj.',def:'烤的',eg:'Grilled salmon.',cn:'烤三文鱼。'},
+salmon:{p:'/ˈsæmən/',pos:'n.',def:'三文鱼',eg:'Fresh salmon.',cn:'新鲜三文鱼。'},
+pasta:{p:'/ˈpɑːstə/',pos:'n.',def:'意面',eg:'A plate of pasta.',cn:'一盘意面。'},
+glass:{p:'/ɡlæs/',pos:'n.',def:'玻璃杯',eg:'A glass of wine.',cn:'一杯酒。'},
+wine:{p:'/waɪn/',pos:'n.',def:'葡萄酒',eg:'White wine.',cn:'白葡萄酒。'},
+meal:{p:'/miːl/',pos:'n.',def:'一餐；饭菜',eg:'Enjoy your meal.',cn:'用餐愉快。'},
+find:{p:'/faɪnd/',pos:'v.',def:'找到；发现',eg:'I can not find it.',cn:'我找不到。'},
+browsing:{p:'/ˈbraʊzɪŋ/',pos:'v.',def:'浏览',eg:'Just browsing.',cn:'随便看看。'},
+try:{p:'/traɪ/',pos:'v.',def:'尝试；试穿',eg:'Try it on.',cn:'试穿一下。'},
+fit:{p:'/fɪt/',pos:'v.',def:'合适；适合',eg:'It fits well.',cn:'很合身。'},
+receipt:{p:'/rɪˈsiːt/',pos:'n.',def:'收据',eg:'Here is the receipt.',cn:'这是收据。'},
+course:{p:'/kɔːrs/',pos:'n.',def:'当然；课程',eg:'Of course!',cn:'当然！'},
+hurry:{p:'/ˈhʌri/',pos:'n.',def:'匆忙；赶时间',eg:'In a hurry.',cn:'赶时间。'},
+accept:{p:'/əkˈsept/',pos:'v.',def:'接受；收（款）',eg:'Accept cards.',cn:'接受刷卡。'},
+both:{p:'/boʊθ/',pos:'pron.',def:'两者都',eg:'Both cash and card.',cn:'现金刷卡都行。'},
+must:{p:'/mʌst/',pos:'aux.',def:'必须；一定',eg:'Must see!',cn:'必看！'},
+recommend:{p:'/ˌrekəˈmend/',pos:'v.',def:'推荐',eg:'I recommend it.',cn:'我推荐。'},
+town:{p:'/taʊn/',pos:'n.',def:'城镇',eg:'Old town.',cn:'老城区。'},
+beautiful:{p:'/ˈbjuːtɪfl/',pos:'adj.',def:'美丽的',eg:'Beautiful view.',cn:'美景。'},
+tip:{p:'/tɪp/',pos:'n.',def:'建议；小费',eg:'Thanks for the tip.',cn:'谢谢建议。'},
+headache:{p:'/ˈhedeɪk/',pos:'n.',def:'头痛',eg:'A bad headache.',cn:'严重头痛。'},
+allergy:{p:'/ˈælərdʒi/',pos:'n.',def:'过敏',eg:'No allergies.',cn:'无过敏。'},
+tablet:{p:'/ˈtæblət/',pos:'n.',def:'药片',eg:'Two tablets.',cn:'两片药。'},
+pay:{p:'/peɪ/',pos:'v.',def:'支付；付钱',eg:'Pay by card.',cn:'刷卡支付。'},
+call:{p:'/kɔːl/',pos:'v.',def:'打电话；呼叫',eg:'Call me.',cn:'给我打电话。'},
+conference:{p:'/ˈkɑːnfərəns/',pos:'n.',def:'会议',eg:'Conference room.',cn:'会议室。'},
+line:{p:'/laɪn/',pos:'n.',def:'线；线路',eg:'Which line?',cn:'几号线？'},
+central:{p:'/ˈsentrəl/',pos:'adj.',def:'中心的',eg:'Central station.',cn:'中央车站。'},
+transfer:{p:'/trænsˈfɜːr/',pos:'v.',def:'换乘；转移',eg:'Transfer at hall.',cn:'在市政厅换乘。'},
+express:{p:'/ɪkˈspres/',pos:'adj.',def:'特快的',eg:'Express train.',cn:'快车。'},
+local:{p:'/ˈloʊkl/',pos:'adj.',def:'当地的；慢车',eg:'Local train.',cn:'慢车；当地的。'}
+};
+var DICT_TRAVEL = {
+airport:{p:'/ˈerpɔːrt/',pos:'n.',def:'机场；航空港',eg:'Where is the airport?',cn:'机场在哪？'},
+passport:{p:'/ˈpæspɔːrt/',pos:'n.',def:'护照',eg:'Show your passport.',cn:'出示护照。'},
+ticket:{p:'/ˈtɪkɪt/',pos:'n.',def:'票；入场券',eg:'Two tickets, please.',cn:'两张票。'},
+hotel:{p:'/hoʊˈtel/',pos:'n.',def:'旅馆；酒店',eg:'I booked a hotel.',cn:'我订了酒店。'},
+flight:{p:'/flaɪt/',pos:'n.',def:'航班；飞行',eg:'My flight is late.',cn:'航班延误了。'},
+plane:{p:'/pleɪn/',pos:'n.',def:'飞机',eg:'The plane is fast.',cn:'飞机很快。'},
+train:{p:'/treɪn/',pos:'n.',def:'火车',eg:'Take the train.',cn:'坐火车。'},
+station:{p:'/ˈsteɪʃn/',pos:'n.',def:'车站',eg:'The bus station.',cn:'公交车站。'},
+bag:{p:'/bæɡ/',pos:'n.',def:'包；袋子',eg:'A small bag.',cn:'一个小包。'},
+suitcase:{p:'/ˈsuːtkeɪs/',pos:'n.',def:'行李箱',eg:'One suitcase only.',cn:'只带一个行李箱。'},
+seat:{p:'/siːt/',pos:'n.',def:'座位',eg:'Window seat, please.',cn:'靠窗座位。'},
+window:{p:'/ˈwɪndoʊ/',pos:'n.',def:'窗户',eg:'By the window.',cn:'靠窗。'},
+gate:{p:'/ɡeɪt/',pos:'n.',def:'登机口；大门',eg:'Gate B12.',cn:'B12登机口。'},
+reservation:{p:'/ˌrezərˈveɪʃn/',pos:'n.',def:'预订；预约',eg:'I have a reservation.',cn:'我预订了。'},
+checkout:{p:'/ˈtʃekaʊt/',pos:'n.',def:'退房；结账',eg:'Checkout at noon.',cn:'中午退房。'},
+breakfast:{p:'/ˈbrekfəst/',pos:'n.',def:'早餐',eg:'Breakfast is free.',cn:'早餐免费。'},
+room:{p:'/ruːm/',pos:'n.',def:'房间',eg:'A clean room.',cn:'干净的房间。'},
+deposit:{p:'/dɪˈpɑːzɪt/',pos:'n.',def:'押金；定金',eg:'Credit card deposit.',cn:'信用卡押金。'},
+museum:{p:'/mjuˈziːəm/',pos:'n.',def:'博物馆',eg:'The art museum.',cn:'艺术博物馆。'},
+guide:{p:'/ɡaɪd/',pos:'n.',def:'导游；指引',eg:'A travel guide.',cn:'旅游指南。'},
+map:{p:'/mæp/',pos:'n.',def:'地图',eg:'Read the map.',cn:'看地图。'},
+tour:{p:'/tʊr/',pos:'n.',def:'旅游；观光',eg:'A city tour.',cn:'城市观光。'},
+beach:{p:'/biːtʃ/',pos:'n.',def:'海滩',eg:'On the beach.',cn:'在海滩上。'},
+mountain:{p:'/ˈmaʊntn/',pos:'n.',def:'山',eg:'Climb the mountain.',cn:'爬山。'},
+city:{p:'/ˈsɪti/',pos:'n.',def:'城市',eg:'A big city.',cn:'大城市。'},
+street:{p:'/striːt/',pos:'n.',def:'街道',eg:'Main street.',cn:'主街。'},
+cash:{p:'/kæʃ/',pos:'n.',def:'现金',eg:'Pay in cash.',cn:'付现金。'},
+center:{p:'/ˈsentər/',pos:'n.',def:'中心；中央',eg:'City center.',cn:'市中心。'},
+north:{p:'/nɔːrθ/',pos:'n.',def:'北；北方',eg:'Go north.',cn:'向北走。'},
+south:{p:'/saʊθ/',pos:'n.',def:'南；南方',eg:'South gate.',cn:'南门。'},
+east:{p:'/iːst/',pos:'n.',def:'东；东方',eg:'East side.',cn:'东边。'},
+west:{p:'/west/',pos:'n.',def:'西；西方',eg:'West end.',cn:'西边。'}
+};
+var DICT_NEWS = {
+world:{p:'/wɜːrld/',pos:'n.',def:'世界',eg:'Around the world.',cn:'世界各地。'},
+leader:{p:'/ˈliːdər/',pos:'n.',def:'领导者；领袖',eg:'World leaders.',cn:'世界领袖。'},
+climate:{p:'/ˈklaɪmət/',pos:'n.',def:'气候',eg:'Climate change.',cn:'气候变化。'},
+summit:{p:'/ˈsʌmɪt/',pos:'n.',def:'峰会；顶峰',eg:'Climate summit.',cn:'气候峰会。'},
+energy:{p:'/ˈenərdʒi/',pos:'n.',def:'能源；能量',eg:'Green energy.',cn:'绿色能源。'},
+earth:{p:'/ɜːrθ/',pos:'n.',def:'地球；土地',eg:'On earth.',cn:'在地球上。'},
+space:{p:'/speɪs/',pos:'n.',def:'太空；空间',eg:'Space station.',cn:'太空站。'},
+science:{p:'/ˈsaɪəns/',pos:'n.',def:'科学',eg:'Life sciences.',cn:'生命科学。'},
+research:{p:'/rɪˈsɜːrtʃ/',pos:'n.',def:'研究',eg:'Do research.',cn:'做研究。'},
+technology:{p:'/tekˈnɑːlədʒi/',pos:'n.',def:'科技；技术',eg:'New technology.',cn:'新技术。'},
+country:{p:'/ˈkʌntri/',pos:'n.',def:'国家；乡村',eg:'My country.',cn:'我的国家。'},
+government:{p:'/ˈɡʌvərnmənt/',pos:'n.',def:'政府',eg:'The government.',cn:'政府。'},
+economy:{p:'/ɪˈkɑːnəmi/',pos:'n.',def:'经济',eg:'The economy.',cn:'经济。'},
+investment:{p:'/ɪnˈvestmənt/',pos:'n.',def:'投资',eg:'Big investment.',cn:'大笔投资。'},
+company:{p:'/ˈkʌmpəni/',pos:'n.',def:'公司',eg:'A big company.',cn:'大公司。'},
+market:{p:'/ˈmɑːrkɪt/',pos:'n.',def:'市场',eg:'The food market.',cn:'食品市场。'},
+news:{p:'/nuːz/',pos:'n.',def:'新闻；消息',eg:'Good news!',cn:'好消息！'},
+report:{p:'/rɪˈpɔːrt/',pos:'n.',def:'报告',eg:'A news report.',cn:'新闻报道。'},
+meeting:{p:'/ˈmiːtɪŋ/',pos:'n.',def:'会议',eg:'At the meeting.',cn:'在会上。'},
+problem:{p:'/ˈprɑːbləm/',pos:'n.',def:'问题；难题',eg:'No problem.',cn:'没问题。'},
+question:{p:'/ˈkwestʃən/',pos:'n.',def:'问题；疑问',eg:'Good question.',cn:'好问题。'},
+answer:{p:'/ˈænsər/',pos:'n.',def:'回答；答案',eg:'The answer is yes.',cn:'答案是肯定的。'},
+idea:{p:'/aɪˈdɪə/',pos:'n.',def:'主意；想法',eg:'Good idea!',cn:'好主意！'},
+change:{p:'/tʃeɪndʒ/',pos:'v.',def:'改变；变化',eg:'Big change.',cn:'巨大的改变。'},
+global:{p:'/ˈɡloʊbl/',pos:'adj.',def:'全球的',eg:'Global warming.',cn:'全球变暖。'},
+international:{p:'/ˌɪntərˈnæʃnəl/',pos:'adj.',def:'国际的',eg:'International team.',cn:'国际团队。'},
+important:{p:'/ɪmˈpɔːrtnt/',pos:'adj.',def:'重要的',eg:'Very important.',cn:'很重要。'},
+ready:{p:'/ˈredi/',pos:'adj.',def:'准备好的',eg:'Are you ready?',cn:'你准备好了吗？'},
+year:{p:'/jɪr/',pos:'n.',def:'年；年份',eg:'Happy New Year!',cn:'新年快乐！'},
+month:{p:'/mʌnθ/',pos:'n.',def:'月',eg:'This month.',cn:'这个月。'},
+week:{p:'/wiːk/',pos:'n.',def:'周；星期',eg:'Next week.',cn:'下周。'},
+today:{p:'/təˈdeɪ/',pos:'n.',def:'今天',eg:'Today is sunny.',cn:'今天晴朗。'},
+tonight:{p:'/təˈnaɪt/',pos:'adv.',def:'今晚',eg:'See you tonight.',cn:'今晚见。'},
+morning:{p:'/ˈmɔːrnɪŋ/',pos:'n.',def:'早晨；上午',eg:'Good morning!',cn:'早上好！'},
+afternoon:{p:'/ˌæftərˈnuːn/',pos:'n.',def:'下午',eg:'Good afternoon.',cn:'下午好。'},
+evening:{p:'/ˈiːvnɪŋ/',pos:'n.',def:'傍晚；晚上',eg:'Good evening.',cn:'晚上好。'},
+night:{p:'/naɪt/',pos:'n.',def:'夜晚',eg:'Good night!',cn:'晚安！'},
+home:{p:'/hoʊm/',pos:'n.',def:'家；家乡',eg:'Go home.',cn:'回家。'},
+house:{p:'/haʊs/',pos:'n.',def:'房子；住宅',eg:'A big house.',cn:'大房子。'},
+school:{p:'/skuːl/',pos:'n.',def:'学校',eg:'Go to school.',cn:'去上学。'},
+book:{p:'/bʊk/',pos:'n.',def:'书；预订',eg:'A good book.',cn:'一本好书。'},
+car:{p:'/kɑːr/',pos:'n.',def:'汽车',eg:'By car.',cn:'开车。'},
+bus:{p:'/bʌs/',pos:'n.',def:'公交车',eg:'Take the bus.',cn:'坐公交。'},
+phone:{p:'/foʊn/',pos:'n.',def:'电话；手机',eg:'Call my phone.',cn:'打我电话。'},
+computer:{p:'/kəmˈpjuːtər/',pos:'n.',def:'电脑',eg:'Use a computer.',cn:'用电脑。'},
+water:{p:'/ˈwɔːtər/',pos:'n.',def:'水',eg:'Drink water.',cn:'喝水。'},
+food:{p:'/fuːd/',pos:'n.',def:'食物',eg:'Good food.',cn:'美食。'},
+coffee:{p:'/ˈkɔːfi/',pos:'n.',def:'咖啡',eg:'A cup of coffee.',cn:'一杯咖啡。'},
+tea:{p:'/tiː/',pos:'n.',def:'茶',eg:'Green tea.',cn:'绿茶。'},
+rice:{p:'/raɪs/',pos:'n.',def:'米饭；大米',eg:'A bowl of rice.',cn:'一碗米饭。'},
+meat:{p:'/miːt/',pos:'n.',def:'肉',eg:'Red meat.',cn:'红肉。'},
+fish:{p:'/fɪʃ/',pos:'n.',def:'鱼',eg:'Fresh fish.',cn:'新鲜的鱼。'},
+fruit:{p:'/fruːt/',pos:'n.',def:'水果',eg:'Fresh fruit.',cn:'新鲜水果。'},
+vegetable:{p:'/ˈvedʒtəbl/',pos:'n.',def:'蔬菜',eg:'Eat vegetables.',cn:'吃蔬菜。'},
+red:{p:'/red/',pos:'adj.',def:'红色的',eg:'A red apple.',cn:'红苹果。'},
+blue:{p:'/bluː/',pos:'adj.',def:'蓝色的',eg:'Blue sky.',cn:'蓝天。'},
+green:{p:'/ɡriːn/',pos:'adj.',def:'绿色的',eg:'Green grass.',cn:'绿草。'},
+white:{p:'/waɪt/',pos:'adj.',def:'白色的',eg:'White snow.',cn:'白雪。'},
+black:{p:'/blæk/',pos:'adj.',def:'黑色的',eg:'Black cat.',cn:'黑猫。'},
+yellow:{p:'/ˈjeloʊ/',pos:'adj.',def:'黄色的',eg:'Yellow light.',cn:'黄灯。'},
+child:{p:'/tʃaɪld/',pos:'n.',def:'孩子',eg:'A small child.',cn:'小孩。'},
+woman:{p:'/ˈwʊmən/',pos:'n.',def:'女人',eg:'A young woman.',cn:'年轻女子。'},
+man:{p:'/mæn/',pos:'n.',def:'男人',eg:'An old man.',cn:'老人。'},
+name:{p:'/neɪm/',pos:'n.',def:'名字',eg:'What is your name?',cn:'你叫什么名字？'}
+};
+// 合并所有词库到 LOCAL_DICT（后者覆盖前者），覆盖 year/morning 等基础常用词汇
+LOCAL_DICT = Object.assign({}, LOCAL_DICT, DICT_BASIC, DICT_DAILY_EXTRA, DICT_TRAVEL, DICT_NEWS);
 
 // Per-passage audio: read full passage
 function toggleEnAudio(idx){
@@ -1495,7 +1771,8 @@ function saveEx(){
     sv('fitness',st);
     document.getElementById('customExName').value='';document.getElementById('customExDesc').value='';
     document.getElementById('exPhotoPreview').style.display='none';document.getElementById('exPhotoPreview').dataset.photo='';
-    renderFitness(document.getElementById('contentArea'));toast('动作已保存 · 卡片永久留存');
+    // 优化：保存成功后停留在「已上传跟练动作」当前页面，不跳转分区，卡片实时双列展示
+    refreshFitnessTab('uploaded');toast('动作已保存 · 卡片已添加');
   }catch(e){
     toast('保存失败: '+(e.message||'存储空间不足'));
   }
@@ -1910,17 +2187,16 @@ function renderThoughtsList(st,filterCat){
     var originalIdx=allNotes.indexOf(n);
     var catTag='<span class="tag"'+(n.category==='灵感'?' style="background:rgba(175,82,222,.1);color:#af52de"':n.category==='碎碎念'?' style="background:rgba(255,45,85,.1);color:#ff2d55"':n.category==='小时刻'?' style="background:rgba(52,199,89,.1);color:#34c759"':'')+'>'+(n.category||'其他')+'</span>';
     var aiLabel=n.ai?'<span style="font-size:9px;color:var(--accent);margin-left:4px">AI</span>':'';
-    // Truncate text for preview (max ~80 chars)
+    // 文字摘要深度缩略：统一固定高度卡片，长文仅展示少量开头预览（由 CSS line-clamp 控制行数）
+    var isLong=n.text.length>50;
     var previewText=n.text;
-    var isLong=n.text.length>80;
-    if(isLong)previewText=n.text.substring(0,80)+'...';
-    var imgHTML=n.photo?'<img src="'+n.photo+'" class="tc-img" style="height:'+(isLong?'80':'100')+'px" onclick="previewImg(\''+n.photo+'\')" loading="lazy">':'';
+    var imgHTML=n.photo?'<img src="'+n.photo+'" class="tc-img" onclick="previewImg(\''+n.photo+'\')" loading="lazy">':'';
     var cls=n.photo?'thought-card':'thought-card text-only';
     var timeStr=new Date(n.time).toLocaleString('zh-CN',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
     return'<div class="'+cls+'" style="margin-bottom:0;cursor:pointer" onclick="showThoughtDetail('+originalIdx+')">'+
       imgHTML+
       '<button class="tc-delete" onclick="event.stopPropagation();rmThought('+originalIdx+')" style="z-index:2">✕</button>'+
-      '<div class="tc-body" style="padding:10px"><div class="tc-text" style="font-size:13px;line-height:1.5">'+previewText+(isLong?' <span style="color:var(--accent);font-size:11px">展开</span>':'')+'</div>'+
+      '<div class="tc-body"><div class="tc-text">'+previewText+(isLong?' <span style="color:var(--accent);font-size:11px;white-space:normal">展开</span>':'')+'</div>'+
       '<div class="tc-meta"><span style="font-size:9px">'+timeStr+'</span><span style="display:flex;align-items:center;gap:4px">'+catTag+aiLabel+'</span></div></div></div>';
   }).join('')+'</div>';
 }
